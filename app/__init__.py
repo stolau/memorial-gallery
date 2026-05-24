@@ -42,9 +42,10 @@ def create_app() -> Flask:
 
         app.register_blueprint(api.bp)
     else:
-        from . import auth, views
+        from . import admin, auth, views
 
         app.register_blueprint(views.bp)
         app.register_blueprint(auth.bp)
+        app.register_blueprint(admin.bp)
 
     return app

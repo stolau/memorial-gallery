@@ -13,6 +13,10 @@
         {% for p in people %}
           <div class="col-sm-6 col-md-4">
             <a href="{{ url_for('views.person', slug=p.slug) }}" class="card text-decoration-none text-reset h-100">
+              {% if p.profile_image %}
+                <img src="{{ url_for('views.media', slug=p.slug, filename=p.profile_image) }}"
+                     class="card-img-top person-card-img" alt="{{ p.display_name }}">
+              {% endif %}
               <div class="card-body">
                 <h3 class="h5 mb-1">{{ p.display_name }}</h3>
                 {% if p.bio %}<p class="text-muted small mb-0">{{ p.bio }}</p>{% endif %}

@@ -15,10 +15,12 @@
         </button>
       {% endif %}
     </div>
-    <div class="btn-group btn-group-sm" role="group">
-      <a class="btn btn-outline-secondary" href="{{ url_for('views.edit', slug=person.slug) }}">Muokkaa tietoja</a>
-      <a class="btn btn-outline-secondary" href="{{ url_for('views.upload', slug=person.slug) }}">Lisää kuvia</a>
-    </div>
+    {% if session.authed %}
+      <div class="btn-group btn-group-sm" role="group">
+        <a class="btn btn-outline-secondary" href="{{ url_for('views.edit', slug=person.slug) }}">Muokkaa tietoja</a>
+        <a class="btn btn-outline-secondary" href="{{ url_for('views.upload', slug=person.slug) }}">Lisää kuvia</a>
+      </div>
+    {% endif %}
   </div>
 
   {% if has_details %}
@@ -54,12 +56,14 @@
       </div>
     </div>
 
-    <script>
-      document.addEventListener('DOMContentLoaded', function () {
-        var el = document.getElementById('details-modal');
-        if (el) { bootstrap.Modal.getOrCreateInstance(el).show(); }
-      });
-    </script>
+    {% if show_info %}
+      <script>
+        document.addEventListener('DOMContentLoaded', function () {
+          var el = document.getElementById('details-modal');
+          if (el) { bootstrap.Modal.getOrCreateInstance(el).show(); }
+        });
+      </script>
+    {% endif %}
   {% endif %}
 
   {% if photos %}

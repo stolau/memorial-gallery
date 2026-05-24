@@ -21,6 +21,11 @@
   border-radius: 4px;
 }
 
+.person-card-img {
+  height: 220px;
+  object-fit: cover;
+}
+
 .profile-img {
   width: 320px;
   height: 320px;

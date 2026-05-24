@@ -12,8 +12,14 @@ The UI is in Finnish.
 - **Per-person pages** at `/<slug>` (e.g. `/kalevi`) with an interactive gallery:
   a large featured photo, previous/next navigation, and a clickable thumbnail strip.
 - **Details card** — a pop-up modal showing the person's portrait, bio, and facts.
-- **Password-protected editing** — adding photos and editing details require login
-  behind a single shared password.
+  Opens on demand via the *Tiedot* button, or automatically when the page is visited
+  with `?showinfo=true`.
+- **Admin panel** at `/admin` (login required) — add, edit, and delete people from one
+  place. New people get a URL slug auto-generated from their name (Finnish characters
+  transliterated, e.g. `Väinö Öström` → `vaino-ostrom`), with automatic de-duplication.
+- **Password-protected editing** — the admin panel, adding photos, and editing details
+  all require login behind a single shared password. Edit/upload controls are hidden
+  from logged-out visitors.
 - **Two run modes** via the `APP_MODE` env var:
   - `fullstack` (default) — server-rendered pages (Jinja2 + Bootstrap 5).
   - `api` — JSON endpoints only, intended for a future separate frontend (e.g. Node.js).
@@ -75,15 +81,18 @@ columns are added idempotently.
 
 ### Full-stack mode (`APP_MODE=fullstack`)
 
-| Method   | Path                      | Description                          |
-|----------|---------------------------|--------------------------------------|
-| GET      | `/`                       | Landing page, list of people.        |
-| GET      | `/<slug>`                 | A person's gallery + details modal.  |
-| GET/POST | `/<slug>/edit`            | Edit person details (login).         |
-| GET/POST | `/<slug>/upload`          | Upload photos (login).               |
-| GET      | `/media/<slug>/<file>`    | Serve an uploaded image.             |
-| GET/POST | `/login`                  | Login form.                          |
-| POST     | `/logout`                 | Log out.                             |
+| Method   | Path                          | Description                                       |
+|----------|-------------------------------|---------------------------------------------------|
+| GET      | `/`                           | Landing page, list of people (with portraits).    |
+| GET      | `/<slug>`                     | A person's gallery. Add `?showinfo=true` to open the details modal automatically. |
+| GET/POST | `/<slug>/edit`                | Edit person details (login).                      |
+| GET/POST | `/<slug>/upload`              | Upload photos (login).                            |
+| GET      | `/media/<slug>/<file>`        | Serve an uploaded image.                          |
+| GET      | `/admin/`                     | Admin panel: list/manage people (login).          |
+| POST     | `/admin/people`               | Create a new person (login).                      |
+| POST     | `/admin/people/<slug>/delete` | Delete a person and all their media (login).      |
+| GET/POST | `/login`                      | Login form.                                       |
+| POST     | `/logout`                     | Log out.                                           |
 
 ### API mode (`APP_MODE=api`)
 
@@ -103,7 +112,8 @@ app/
   views.py           # full-stack routes (HTML)
   api.py             # API routes (JSON)
   auth.py            # login/logout + @login_required
-  templates/         # Jinja2 templates (base, index, person, edit, upload, login)
+  admin.py           # admin panel: add / delete people
+  templates/         # Jinja2 templates (base, index, person, edit, upload, login, admin)
   static/css/        # styles
 instance/            # SQLite database (gitignored, created at runtime)
 media/<slug>/        # uploaded photos; portraits under media/<slug>/profile/ (gitignored)

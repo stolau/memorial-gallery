@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Hallinta — Kaijankoski{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <h1 class="h3 mb-4">Hallinta</h1>
+
+  <div class="card mb-4">
+    <div class="card-body">
+      <h2 class="h5 mb-3">Lisää henkilö</h2>
+      <form method="post" action="{{ url_for('admin.create') }}" class="row g-2 align-items-end">
+        <div class="col-sm-5">
+          <label class="form-label">Nimi</label>
+          <input type="text" name="display_name" class="form-control" required>
+        </div>
+        <div class="col-sm-4">
+          <label class="form-label">Tunnus (valinnainen)</label>
+          <input type="text" name="slug" class="form-control" placeholder="luodaan nimestä">
+        </div>
+        <div class="col-sm-3">
+          <button type="submit" class="btn btn-primary w-100">Lisää</button>
+        </div>
+      </form>
+      <div class="form-text mt-2">
+        Tunnus näkyy osoitteessa, esim. <code>/kalevi</code>. Jätä tyhjäksi, niin se luodaan nimestä.
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <h2 class="h5 mb-3">Henkilöt</h2>
+      {% if people %}
+        <div class="table-responsive">
+          <table class="table align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Nimi</th>
+                <th>Tunnus</th>
+                <th class="text-center">Kuvia</th>
+                <th class="text-end">Toiminnot</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for p in people %}
+                <tr>
+                  <td>{{ p.display_name }}</td>
+                  <td><code>/{{ p.slug }}</code></td>
+                  <td class="text-center">{{ p.photo_count }}</td>
+                  <td class="text-end">
+                    <div class="btn-group btn-group-sm me-2">
+                      <a class="btn btn-outline-secondary" href="{{ url_for('views.person', slug=p.slug) }}">Avaa</a>
+                      <a class="btn btn-outline-secondary" href="{{ url_for('views.edit', slug=p.slug) }}">Muokkaa</a>
+                      <a class="btn btn-outline-secondary" href="{{ url_for('views.upload', slug=p.slug) }}">Kuvat</a>
+                    </div>
+                    <form method="post" action="{{ url_for('admin.delete', slug=p.slug) }}"
+                          class="d-inline js-delete" data-name="{{ p.display_name }}">
+                      <button type="submit" class="btn btn-sm btn-outline-danger">Poista</button>
+                    </form>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="text-muted mb-0">Ei henkilöitä. Lisää ensimmäinen yllä.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('.js-delete').forEach(function (form) {
+    form.addEventListener('submit', function (e) {
+      var name = form.dataset.name || 'tämä henkilö';
+      if (!confirm('Poistetaanko ' + name + ' ja kaikki hänen kuvansa pysyvästi?')) {
+        e.preventDefault();
+      }
+    });
+  });
+</script>
+{% endblock %}

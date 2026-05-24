@@ -30,7 +30,10 @@ def person(slug: str):
         }
         for ph in photos
     ]
-    return render_template("person.html", person=p, photos=photos, photos_json=photos_json)
+    show_info = request.args.get("showinfo", "").lower() in ("1", "true", "yes")
+    return render_template(
+        "person.html", person=p, photos=photos, photos_json=photos_json, show_info=show_info
+    )
 
 
 def _int_or_none(raw: str | None) -> int | None:
