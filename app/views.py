@@ -1,7 +1,8 @@
 import secrets
 from pathlib import Path
 
-from flask import Blueprint, abort, current_app, flash, redirect, render_template, request, send_from_directory, url_for
+from flask import Blueprint, abort, current_app, flash, redirect, request, render_template, send_from_directory, session, url_for
+from flask_babel import gettext, ngettext
 from werkzeug.utils import secure_filename
 
 from . import models
@@ -10,6 +11,13 @@ from .auth import login_required
 bp = Blueprint("views", __name__)
 
 ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
+
+
+@bp.route("/lang/<code>")
+def set_language(code: str):
+    if code in current_app.config["LANGUAGES"]:
+        session["lang"] = code
+    return redirect(request.referrer or url_for("views.index"))
 
 
 @bp.route("/")
@@ -91,7 +99,7 @@ def edit(slug: str):
             update_kwargs["profile_image"] = None
 
         models.update_person(slug, **update_kwargs)
-        flash("Tiedot päivitetty.")
+        flash(gettext("Details updated."))
         return redirect(url_for("views.person", slug=slug))
 
     return render_template("edit_person.html", person=p)
@@ -119,11 +127,14 @@ def _save_uploaded_photos(files, dest_dir: Path, caption: str | None, register) 
 
 def _flash_upload_result(saved: int, skipped: int) -> None:
     if saved:
-        flash("Ladattiin 1 kuva." if saved == 1 else f"Ladattiin {saved} kuvaa.")
+        flash(ngettext("Uploaded %(num)d photo.", "Uploaded %(num)d photos.", saved))
     if skipped:
-        flash(f"Ohitettiin {skipped} tiedostoa, joiden muotoa ei tueta (tuetut: JPG, PNG, GIF, WEBP).")
+        flash(gettext(
+            "Skipped %(num)d file(s) in an unsupported format (supported: JPG, PNG, GIF, WEBP).",
+            num=skipped,
+        ))
     if not saved and not skipped:
-        flash("Ei valittuja kuvia.")
+        flash(gettext("No photos selected."))
 
 
 @bp.route("/<slug>/upload", methods=("GET", "POST"))
@@ -189,7 +200,7 @@ def event_edit(slug: str):
             event_time=_str_or_none(request.form.get("event_time")),
             place=_str_or_none(request.form.get("place")),
         )
-        flash("Tiedot päivitetty.")
+        flash(gettext("Details updated."))
         return redirect(url_for("views.event", slug=slug))
 
     return render_template("event_edit.html", event=e)

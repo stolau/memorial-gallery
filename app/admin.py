@@ -4,6 +4,7 @@ import unicodedata
 from pathlib import Path
 
 from flask import Blueprint, abort, current_app, flash, redirect, render_template, request, url_for
+from flask_babel import gettext
 
 from . import models
 from .auth import login_required
@@ -45,17 +46,17 @@ def index():
 def create():
     display_name = (request.form.get("display_name") or "").strip()
     if not display_name:
-        flash("Nimi on pakollinen.")
+        flash(gettext("Name is required."))
         return redirect(url_for("admin.index"))
 
     base = _slugify(request.form.get("slug") or display_name)
     if not base:
-        flash("Anna kelvollinen tunnus (vain kirjaimia ja numeroita).")
+        flash(gettext("Enter a valid slug (letters and numbers only)."))
         return redirect(url_for("admin.index"))
 
     slug = _unique_slug(base, models.get_person)
     models.create_person(slug, display_name)
-    flash(f'Henkilö "{display_name}" lisätty. Täydennä tiedot ja lisää kuvia.')
+    flash(gettext('Person "%(name)s" added. Fill in the details and add photos.', name=display_name))
     return redirect(url_for("views.edit", slug=slug))
 
 
@@ -69,7 +70,7 @@ def delete(slug: str):
     media_dir = Path(current_app.config["MEDIA_ROOT"]) / slug
     if media_dir.exists():
         shutil.rmtree(media_dir, ignore_errors=True)
-    flash(f'Henkilö "{p["display_name"]}" ja kaikki kuvat poistettu.')
+    flash(gettext('Person "%(name)s" and all photos deleted.', name=p["display_name"]))
     return redirect(url_for("admin.index"))
 
 
@@ -78,17 +79,17 @@ def delete(slug: str):
 def create_event():
     name = (request.form.get("display_name") or "").strip()
     if not name:
-        flash("Nimi on pakollinen.")
+        flash(gettext("Name is required."))
         return redirect(url_for("admin.index"))
 
     base = _slugify(request.form.get("slug") or name)
     if not base:
-        flash("Anna kelvollinen tunnus (vain kirjaimia ja numeroita).")
+        flash(gettext("Enter a valid slug (letters and numbers only)."))
         return redirect(url_for("admin.index"))
 
     slug = _unique_slug(base, models.get_event)
     models.create_event(slug, name)
-    flash(f'Tapahtuma "{name}" lisätty. Täydennä tiedot ja lisää kuvia.')
+    flash(gettext('Event "%(name)s" added. Fill in the details and add photos.', name=name))
     return redirect(url_for("views.event_edit", slug=slug))
 
 
@@ -102,5 +103,5 @@ def delete_event(slug: str):
     media_dir = Path(current_app.config["MEDIA_ROOT"]) / "events" / slug
     if media_dir.exists():
         shutil.rmtree(media_dir, ignore_errors=True)
-    flash(f'Tapahtuma "{e["name"]}" ja kaikki kuvat poistettu.')
+    flash(gettext('Event "%(name)s" and all photos deleted.', name=e["name"]))
     return redirect(url_for("admin.index"))

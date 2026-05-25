@@ -1,14 +1,14 @@
 {% extends "base.html" %}
-{% block title %}Kirjaudu sisään — Kaijankoski{% endblock %}
+{% block title %}{{ _('Sign in') }} — Kaijankoski{% endblock %}
 {% block content %}
 <div class="container py-5" style="max-width: 420px;">
-  <h1 class="h3 mb-3">Kirjaudu sisään</h1>
+  <h1 class="h3 mb-3">{{ _('Sign in') }}</h1>
   <form method="post">
     <div class="mb-3">
-      <label class="form-label">Salasana</label>
+      <label class="form-label">{{ _('Password') }}</label>
       <input type="password" name="password" class="form-control" autofocus required>
     </div>
-    <button type="submit" class="btn btn-primary">Kirjaudu</button>
+    <button type="submit" class="btn btn-primary">{{ _('Log in') }}</button>
   </form>
 </div>
 {% endblock %}

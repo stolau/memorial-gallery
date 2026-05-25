@@ -1,0 +1,337 @@
+# Finnish translations for PROJECT.
+# Copyright (C) 2026 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-05-25 07:17+0300\n"
+"PO-Revision-Date: 2026-05-25 07:17+0300\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: fi\n"
+"Language-Team: fi <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: app/__init__.py:63
+#, python-format
+msgid "Upload too large (limit %(limit)s MB)."
+msgstr "Liian suuri lähetys (yläraja %(limit)s MB)."
+
+#: app/__init__.py:65
+#, python-format
+msgid "The upload is too large (limit %(limit)s MB). Choose fewer or smaller photos."
+msgstr "Lähetys on liian suuri (yläraja %(limit)s MB). Valitse vähemmän tai pienempiä kuvia."
+
+#: app/admin.py:49 app/admin.py:82
+msgid "Name is required."
+msgstr "Nimi on pakollinen."
+
+#: app/admin.py:54 app/admin.py:87
+msgid "Enter a valid slug (letters and numbers only)."
+msgstr "Anna kelvollinen tunnus (vain kirjaimia ja numeroita)."
+
+#: app/admin.py:59
+#, python-format
+msgid "Person \"%(name)s\" added. Fill in the details and add photos."
+msgstr "Henkilö \"%(name)s\" lisätty. Täydennä tiedot ja lisää kuvia."
+
+#: app/admin.py:73
+#, python-format
+msgid "Person \"%(name)s\" and all photos deleted."
+msgstr "Henkilö \"%(name)s\" ja kaikki kuvat poistettu."
+
+#: app/admin.py:92
+#, python-format
+msgid "Event \"%(name)s\" added. Fill in the details and add photos."
+msgstr "Tapahtuma \"%(name)s\" lisätty. Täydennä tiedot ja lisää kuvia."
+
+#: app/admin.py:106
+#, python-format
+msgid "Event \"%(name)s\" and all photos deleted."
+msgstr "Tapahtuma \"%(name)s\" ja kaikki kuvat poistettu."
+
+#: app/auth.py:25
+msgid "Wrong password."
+msgstr "Väärä salasana."
+
+#: app/views.py:102 app/views.py:203
+msgid "Details updated."
+msgstr "Tiedot päivitetty."
+
+#: app/views.py:130
+#, python-format
+msgid "Uploaded %(num)d photo."
+msgid_plural "Uploaded %(num)d photos."
+msgstr[0] "Ladattiin %(num)d kuva."
+msgstr[1] "Ladattiin %(num)d kuvaa."
+
+#: app/views.py:133
+#, python-format
+msgid "Skipped %(num)d file(s) in an unsupported format (supported: JPG, PNG, GIF, WEBP)."
+msgstr "Ohitettiin %(num)d tiedostoa, joiden muotoa ei tueta (tuetut: JPG, PNG, GIF, WEBP)."
+
+#: app/views.py:137
+msgid "No photos selected."
+msgstr "Ei valittuja kuvia."
+
+#: app/templates/admin.html:2 app/templates/admin.html:5
+#: app/templates/base.html:22
+msgid "Admin"
+msgstr "Hallinta"
+
+#: app/templates/admin.html:9
+msgid "Add person"
+msgstr "Lisää henkilö"
+
+#: app/templates/admin.html:12 app/templates/admin.html:37
+#: app/templates/admin.html:76 app/templates/admin.html:101
+#: app/templates/edit_person.html:8 app/templates/event_edit.html:8
+msgid "Name"
+msgstr "Nimi"
+
+#: app/templates/admin.html:16 app/templates/admin.html:80
+msgid "Slug (optional)"
+msgstr "Tunnus (valinnainen)"
+
+#: app/templates/admin.html:17 app/templates/admin.html:81
+msgid "generated from name"
+msgstr "luodaan nimestä"
+
+#: app/templates/admin.html:20 app/templates/admin.html:84
+msgid "Add"
+msgstr "Lisää"
+
+#: app/templates/admin.html:24
+msgid "The slug appears in the URL, e.g. /kalevi. Leave empty to generate it from the name."
+msgstr "Tunnus näkyy osoitteessa, esim. /kalevi. Jätä tyhjäksi, niin se luodaan nimestä."
+
+#: app/templates/admin.html:31 app/templates/index.html:10
+msgid "People"
+msgstr "Henkilöt"
+
+#: app/templates/admin.html:38 app/templates/admin.html:102
+msgid "Slug"
+msgstr "Tunnus"
+
+#: app/templates/admin.html:39 app/templates/admin.html:53
+#: app/templates/admin.html:103 app/templates/admin.html:117
+#: app/templates/event_upload.html:8 app/templates/upload.html:8
+msgid "Photos"
+msgstr "Kuvat"
+
+#: app/templates/admin.html:40 app/templates/admin.html:104
+msgid "Actions"
+msgstr "Toiminnot"
+
+#: app/templates/admin.html:51 app/templates/admin.html:115
+msgid "Open"
+msgstr "Avaa"
+
+#: app/templates/admin.html:52 app/templates/admin.html:116
+msgid "Edit"
+msgstr "Muokkaa"
+
+#: app/templates/admin.html:57 app/templates/admin.html:121
+msgid "Delete"
+msgstr "Poista"
+
+#: app/templates/admin.html:66
+msgid "No people yet. Add the first one above."
+msgstr "Ei henkilöitä. Lisää ensimmäinen yllä."
+
+#: app/templates/admin.html:73
+msgid "Add event"
+msgstr "Lisää tapahtuma"
+
+#: app/templates/admin.html:88
+msgid "The slug appears in the URL, e.g. /event/haat-1975. Leave empty to generate it from the name."
+msgstr "Tunnus näkyy osoitteessa, esim. /event/haat-1975. Jätä tyhjäksi, niin se luodaan nimestä."
+
+#: app/templates/admin.html:95 app/templates/index.html:34
+msgid "Events"
+msgstr "Tapahtumat"
+
+#: app/templates/admin.html:130
+msgid "No events yet. Add the first one above."
+msgstr "Ei tapahtumia. Lisää ensimmäinen yllä."
+
+#: app/templates/admin.html:137
+#, python-format
+msgid "Permanently delete \"%(name)s\" and all photos?"
+msgstr "Poistetaanko \"%(name)s\" ja kaikki kuvat pysyvästi?"
+
+#: app/templates/admin.html:138
+msgid "this item"
+msgstr "tämä kohde"
+
+#: app/templates/base.html:15
+msgid "Language"
+msgstr "Kieli"
+
+#: app/templates/base.html:24
+msgid "Log out"
+msgstr "Kirjaudu ulos"
+
+#: app/templates/base.html:37 app/templates/person.html:32
+msgid "Close"
+msgstr "Sulje"
+
+#: app/templates/edit_person.html:2 app/templates/edit_person.html:5
+#: app/templates/event_edit.html:2 app/templates/event_edit.html:5
+#, python-format
+msgid "Edit: %(name)s"
+msgstr "Muokkaa: %(name)s"
+
+#: app/templates/edit_person.html:12
+msgid "Biography"
+msgstr "Elämäkerta"
+
+#: app/templates/edit_person.html:17
+msgid "Birth year"
+msgstr "Syntymävuosi"
+
+#: app/templates/edit_person.html:21
+msgid "Year of death"
+msgstr "Kuolinvuosi"
+
+#: app/templates/edit_person.html:26 app/templates/person.html:48
+msgid "Birthplace"
+msgstr "Syntymäpaikka"
+
+#: app/templates/edit_person.html:30 app/templates/person.html:49
+msgid "Profession"
+msgstr "Ammatti"
+
+#: app/templates/edit_person.html:35
+msgid "Profile picture"
+msgstr "Profiilikuva"
+
+#: app/templates/edit_person.html:42
+msgid "Remove current picture"
+msgstr "Poista nykyinen kuva"
+
+#: app/templates/edit_person.html:47
+msgid "Choose a new picture to replace the current one."
+msgstr "Valitse uusi kuva korvataksesi nykyisen."
+
+#: app/templates/edit_person.html:51 app/templates/event_edit.html:25
+msgid "Save"
+msgstr "Tallenna"
+
+#: app/templates/edit_person.html:52 app/templates/event_edit.html:26
+msgid "Cancel"
+msgstr "Peruuta"
+
+#: app/templates/event.html:11 app/templates/person.html:20
+msgid "Edit details"
+msgstr "Muokkaa tietoja"
+
+#: app/templates/event.html:12 app/templates/person.html:21
+msgid "Add photos"
+msgstr "Lisää kuvia"
+
+#: app/templates/event.html:22 app/templates/event_edit.html:16
+msgid "Time"
+msgstr "Aika"
+
+#: app/templates/event.html:23 app/templates/event_edit.html:21
+msgid "Place"
+msgstr "Paikka"
+
+#: app/templates/event.html:39 app/templates/person.html:79
+msgid "Previous"
+msgstr "Edellinen"
+
+#: app/templates/event.html:41 app/templates/person.html:81
+msgid "Next"
+msgstr "Seuraava"
+
+#: app/templates/event.html:46 app/templates/person.html:86
+#, python-format
+msgid "Show photo %(n)s"
+msgstr "Näytä kuva %(n)s"
+
+#: app/templates/event.html:84 app/templates/person.html:124
+msgid "No photos yet."
+msgstr "Ei vielä kuvia."
+
+#: app/templates/event.html:84 app/templates/person.html:124
+msgid "Upload the first one."
+msgstr "Lataa ensimmäinen."
+
+#: app/templates/event_edit.html:12
+msgid "Description"
+msgstr "Kuvaus"
+
+#: app/templates/event_edit.html:18
+msgid "e.g. Summer 1975"
+msgstr "esim. Kesä 1975"
+
+#: app/templates/event_upload.html:2 app/templates/event_upload.html:5
+#: app/templates/upload.html:2 app/templates/upload.html:5
+#, python-format
+msgid "Upload photos: %(name)s"
+msgstr "Lataa kuvia: %(name)s"
+
+#: app/templates/event_upload.html:10 app/templates/upload.html:10
+msgid "Supported formats: JPG, PNG, GIF, WEBP."
+msgstr "Tuetut muodot: JPG, PNG, GIF, WEBP."
+
+#: app/templates/event_upload.html:13 app/templates/upload.html:13
+msgid "Caption (optional, applied to all)"
+msgstr "Kuvateksti (vapaaehtoinen, sama kaikille)"
+
+#: app/templates/event_upload.html:17 app/templates/upload.html:17
+msgid "Upload"
+msgstr "Lataa"
+
+#: app/templates/event_upload.html:18 app/templates/upload.html:18
+msgid "Back to gallery"
+msgstr "Takaisin galleriaan"
+
+#: app/templates/index.html:5
+msgid "In memory"
+msgstr "Muistoksi"
+
+#: app/templates/index.html:6
+msgid "Our family's memorial site."
+msgstr "Sukumme muistosivusto."
+
+#: app/templates/index.html:29
+msgid "No people yet."
+msgstr "Ei vielä henkilöitä."
+
+#: app/templates/index.html:54
+msgid "No events yet."
+msgstr "Ei vielä tapahtumia."
+
+#: app/templates/login.html:2 app/templates/login.html:5
+msgid "Sign in"
+msgstr "Kirjaudu sisään"
+
+#: app/templates/login.html:8
+msgid "Password"
+msgstr "Salasana"
+
+#: app/templates/login.html:11
+msgid "Log in"
+msgstr "Kirjaudu"
+
+#: app/templates/person.html:14
+msgid "Details"
+msgstr "Tiedot"
+
+#: app/templates/person.html:46
+msgid "Born"
+msgstr "Syntynyt"
+
+#: app/templates/person.html:47
+msgid "Died"
+msgstr "Kuollut"
+

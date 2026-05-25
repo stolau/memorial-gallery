@@ -11,14 +11,14 @@
       {% if has_details %}
         <button class="btn btn-sm btn-outline-secondary" type="button"
                 data-bs-toggle="modal" data-bs-target="#details-modal">
-          Tiedot
+          {{ _('Details') }}
         </button>
       {% endif %}
     </div>
     {% if session.authed %}
       <div class="btn-group btn-group-sm" role="group">
-        <a class="btn btn-outline-secondary" href="{{ url_for('views.edit', slug=person.slug) }}">Muokkaa tietoja</a>
-        <a class="btn btn-outline-secondary" href="{{ url_for('views.upload', slug=person.slug) }}">Lisää kuvia</a>
+        <a class="btn btn-outline-secondary" href="{{ url_for('views.edit', slug=person.slug) }}">{{ _('Edit details') }}</a>
+        <a class="btn btn-outline-secondary" href="{{ url_for('views.upload', slug=person.slug) }}">{{ _('Add photos') }}</a>
       </div>
     {% endif %}
   </div>
@@ -29,7 +29,7 @@
         <div class="modal-content">
           <div class="modal-header">
             <h2 class="modal-title h5 mb-0" id="details-modal-title">{{ person.display_name }}</h2>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Sulje"></button>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ _('Close') }}"></button>
           </div>
           <div class="modal-body">
             <div class="row g-3 align-items-start">
@@ -43,10 +43,10 @@
                 {% if person.bio %}<p class="text-center mb-{{ '3' if has_facts else '0' }}">{{ person.bio }}</p>{% endif %}
                 {% if has_facts %}
                   <dl class="row mb-0 small">
-                    {% if person.birth_year %}<dt class="col-5 col-md-4">Syntynyt</dt><dd class="col-7 col-md-8">{{ person.birth_year }}</dd>{% endif %}
-                    {% if person.death_year %}<dt class="col-5 col-md-4">Kuollut</dt><dd class="col-7 col-md-8">{{ person.death_year }}</dd>{% endif %}
-                    {% if person.birthplace %}<dt class="col-5 col-md-4">Syntymäpaikka</dt><dd class="col-7 col-md-8">{{ person.birthplace }}</dd>{% endif %}
-                    {% if person.profession %}<dt class="col-5 col-md-4">Ammatti</dt><dd class="col-7 col-md-8">{{ person.profession }}</dd>{% endif %}
+                    {% if person.birth_year %}<dt class="col-5 col-md-4">{{ _('Born') }}</dt><dd class="col-7 col-md-8">{{ person.birth_year }}</dd>{% endif %}
+                    {% if person.death_year %}<dt class="col-5 col-md-4">{{ _('Died') }}</dt><dd class="col-7 col-md-8">{{ person.death_year }}</dd>{% endif %}
+                    {% if person.birthplace %}<dt class="col-5 col-md-4">{{ _('Birthplace') }}</dt><dd class="col-7 col-md-8">{{ person.birthplace }}</dd>{% endif %}
+                    {% if person.profession %}<dt class="col-5 col-md-4">{{ _('Profession') }}</dt><dd class="col-7 col-md-8">{{ person.profession }}</dd>{% endif %}
                   </dl>
                 {% endif %}
               </div>
@@ -76,14 +76,14 @@
       </div>
 
       <div class="d-flex justify-content-center align-items-center gap-3 mb-4">
-        <button id="prev-btn" type="button" class="btn btn-outline-secondary">&laquo; Edellinen</button>
+        <button id="prev-btn" type="button" class="btn btn-outline-secondary">&laquo; {{ _('Previous') }}</button>
         <span id="position" class="text-muted small"></span>
-        <button id="next-btn" type="button" class="btn btn-outline-secondary">Seuraava &raquo;</button>
+        <button id="next-btn" type="button" class="btn btn-outline-secondary">{{ _('Next') }} &raquo;</button>
       </div>
 
       <div class="thumb-strip d-flex flex-wrap gap-2 justify-content-center">
         {% for ph in photos %}
-          <button type="button" class="thumb-btn" data-index="{{ loop.index0 }}" aria-label="Näytä kuva {{ loop.index }}">
+          <button type="button" class="thumb-btn" data-index="{{ loop.index0 }}" aria-label="{{ _('Show photo %(n)s', n=loop.index) }}">
             <img src="{{ url_for('views.media', slug=person.slug, filename=ph.filename) }}"
                  alt="{{ ph.caption or '' }}" class="thumb-img">
           </button>
@@ -121,7 +121,7 @@
       })();
     </script>
   {% else %}
-    <p class="text-muted">Ei vielä kuvia. <a href="{{ url_for('views.upload', slug=person.slug) }}">Lataa ensimmäinen.</a></p>
+    <p class="text-muted">{{ _('No photos yet.') }} <a href="{{ url_for('views.upload', slug=person.slug) }}">{{ _('Upload the first one.') }}</a></p>
   {% endif %}
 </div>
 {% endblock %}
