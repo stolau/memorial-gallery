@@ -14,9 +14,14 @@ The UI is in Finnish.
 - **Details card** — a pop-up modal showing the person's portrait, bio, and facts.
   Opens on demand via the *Tiedot* button, or automatically when the page is visited
   with `?showinfo=true`.
-- **Admin panel** at `/admin` (login required) — add, edit, and delete people from one
-  place. New people get a URL slug auto-generated from their name (Finnish characters
-  transliterated, e.g. `Väinö Öström` → `vaino-ostrom`), with automatic de-duplication.
+- **Event pages** at `/event/<slug>` — a parallel entity for events (weddings, reunions,
+  …) with the same interactive gallery. Details (name, description, time, place) are shown
+  inline rather than in a popup. Events are listed in a "Tapahtumat" section on the main
+  page, each card covered by the event's latest photo.
+- **Admin panel** at `/admin` (login required) — add, edit, and delete both people and
+  events from one place. New entries get a URL slug auto-generated from their name (Finnish
+  characters transliterated, e.g. `Väinö Öström` → `vaino-ostrom`), with automatic
+  de-duplication.
 - **Password-protected editing** — the admin panel, adding photos, and editing details
   all require login behind a single shared password. Edit/upload controls are hidden
   from logged-out visitors.
@@ -87,10 +92,16 @@ columns are added idempotently.
 | GET      | `/<slug>`                     | A person's gallery. Add `?showinfo=true` to open the details modal automatically. |
 | GET/POST | `/<slug>/edit`                | Edit person details (login).                      |
 | GET/POST | `/<slug>/upload`              | Upload photos (login).                            |
-| GET      | `/media/<slug>/<file>`        | Serve an uploaded image.                          |
-| GET      | `/admin/`                     | Admin panel: list/manage people (login).          |
+| GET      | `/media/<slug>/<file>`        | Serve an uploaded person image.                   |
+| GET      | `/event/<slug>`               | An event's page: inline details + gallery.        |
+| GET/POST | `/event/<slug>/edit`          | Edit event details (login).                       |
+| GET/POST | `/event/<slug>/upload`        | Upload event photos (login).                      |
+| GET      | `/event-media/<slug>/<file>`  | Serve an uploaded event image.                    |
+| GET      | `/admin/`                     | Admin panel: list/manage people and events (login). |
 | POST     | `/admin/people`               | Create a new person (login).                      |
 | POST     | `/admin/people/<slug>/delete` | Delete a person and all their media (login).      |
+| POST     | `/admin/events`               | Create a new event (login).                       |
+| POST     | `/admin/events/<slug>/delete` | Delete an event and all its media (login).        |
 | GET/POST | `/login`                      | Login form.                                       |
 | POST     | `/logout`                     | Log out.                                           |
 
@@ -100,6 +111,8 @@ columns are added idempotently.
 |--------|-----------------------|--------------------------------------|
 | GET    | `/api/people`         | List of people (JSON).               |
 | GET    | `/api/people/<slug>`  | A person plus their photos (JSON).   |
+| GET    | `/api/events`         | List of events (JSON).               |
+| GET    | `/api/events/<slug>`  | An event plus its photos (JSON).     |
 
 ## Project layout
 
@@ -112,11 +125,12 @@ app/
   views.py           # full-stack routes (HTML)
   api.py             # API routes (JSON)
   auth.py            # login/logout + @login_required
-  admin.py           # admin panel: add / delete people
-  templates/         # Jinja2 templates (base, index, person, edit, upload, login, admin)
+  admin.py           # admin panel: add / delete people and events
+  templates/         # Jinja2 templates (base, index, person, event, *_edit, *_upload, login, admin)
   static/css/        # styles
 instance/            # SQLite database (gitignored, created at runtime)
-media/<slug>/        # uploaded photos; portraits under media/<slug>/profile/ (gitignored)
+media/<slug>/        # person photos; portraits under media/<slug>/profile/ (gitignored)
+media/events/<slug>/ # event photos (gitignored)
 ```
 
 ## Notes

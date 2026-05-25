@@ -19,3 +19,19 @@ def person(slug: str):
     for ph in photos:
         ph["url"] = url_for("views.media", slug=slug, filename=ph["filename"], _external=False)
     return jsonify({"person": p, "photos": photos})
+
+
+@bp.route("/events")
+def events():
+    return jsonify(models.list_events())
+
+
+@bp.route("/events/<slug>")
+def event(slug: str):
+    e = models.get_event(slug)
+    if not e:
+        abort(404)
+    photos = models.list_event_photos(e["id"])
+    for ph in photos:
+        ph["url"] = url_for("views.event_media", slug=slug, filename=ph["filename"], _external=False)
+    return jsonify({"event": e, "photos": photos})

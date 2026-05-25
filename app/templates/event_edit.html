@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Muokkaa — {{ event.name }}{% endblock %}
+{% block content %}
+<div class="container py-4" style="max-width: 640px;">
+  <h1 class="h3 mb-3">Muokkaa: {{ event.name }}</h1>
+  <form method="post">
+    <div class="mb-3">
+      <label class="form-label">Nimi</label>
+      <input type="text" name="name" class="form-control" value="{{ event.name }}" required>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Kuvaus</label>
+      <textarea name="description" class="form-control" rows="3">{{ event.description or '' }}</textarea>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Aika</label>
+      <input type="text" name="event_time" class="form-control" value="{{ event.event_time or '' }}"
+             placeholder="esim. Kesä 1975">
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Paikka</label>
+      <input type="text" name="place" class="form-control" value="{{ event.place or '' }}">
+    </div>
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-primary">Tallenna</button>
+      <a class="btn btn-outline-secondary" href="{{ url_for('views.event', slug=event.slug) }}">Peruuta</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

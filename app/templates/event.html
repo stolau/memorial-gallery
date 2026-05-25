@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}{{ event.name }} — Kaijankoski{% endblock %}
+{% block content %}
+<div class="container py-4">
+  {% set has_details = event.description or event.event_time or event.place %}
+
+  <div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
+    <h1 class="mb-0">{{ event.name }}</h1>
+    {% if session.authed %}
+      <div class="btn-group btn-group-sm" role="group">
+        <a class="btn btn-outline-secondary" href="{{ url_for('views.event_edit', slug=event.slug) }}">Muokkaa tietoja</a>
+        <a class="btn btn-outline-secondary" href="{{ url_for('views.event_upload', slug=event.slug) }}">Lisää kuvia</a>
+      </div>
+    {% endif %}
+  </div>
+
+  {% if has_details %}
+    <div class="card card-body bg-light border-0 mb-4">
+      {% if event.description %}<p class="mb-{{ '3' if (event.event_time or event.place) else '0' }}">{{ event.description }}</p>{% endif %}
+      {% if event.event_time or event.place %}
+        <dl class="row mb-0 small">
+          {% if event.event_time %}<dt class="col-5 col-md-3">Aika</dt><dd class="col-7 col-md-9">{{ event.event_time }}</dd>{% endif %}
+          {% if event.place %}<dt class="col-5 col-md-3">Paikka</dt><dd class="col-7 col-md-9">{{ event.place }}</dd>{% endif %}
+        </dl>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  {% if photos %}
+    <div class="gallery" data-photos="{{ photos_json|tojson|forceescape }}">
+      <div class="main-photo text-center mb-3">
+        <div class="main-photo-frame">
+          <img id="main-img" src="" alt="">
+        </div>
+        <figcaption id="main-caption" class="mt-2 text-muted"></figcaption>
+      </div>
+
+      <div class="d-flex justify-content-center align-items-center gap-3 mb-4">
+        <button id="prev-btn" type="button" class="btn btn-outline-secondary">&laquo; Edellinen</button>
+        <span id="position" class="text-muted small"></span>
+        <button id="next-btn" type="button" class="btn btn-outline-secondary">Seuraava &raquo;</button>
+      </div>
+
+      <div class="thumb-strip d-flex flex-wrap gap-2 justify-content-center">
+        {% for ph in photos %}
+          <button type="button" class="thumb-btn" data-index="{{ loop.index0 }}" aria-label="Näytä kuva {{ loop.index }}">
+            <img src="{{ url_for('views.event_media', slug=event.slug, filename=ph.filename) }}"
+                 alt="{{ ph.caption or '' }}" class="thumb-img">
+          </button>
+        {% endfor %}
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        var gallery = document.querySelector('.gallery');
+        var photos = JSON.parse(gallery.dataset.photos);
+        var mainImg = document.getElementById('main-img');
+        var mainCaption = document.getElementById('main-caption');
+        var position = document.getElementById('position');
+        var thumbs = document.querySelectorAll('.thumb-btn');
+        var current = 0;
+
+        function show(i) {
+          current = (i + photos.length) % photos.length;
+          var p = photos[current];
+          mainImg.src = p.url;
+          mainImg.alt = p.caption || '';
+          mainCaption.textContent = p.caption || '';
+          position.textContent = (current + 1) + ' / ' + photos.length;
+          thumbs.forEach(function (t, idx) { t.classList.toggle('active', idx === current); });
+        }
+
+        thumbs.forEach(function (t) {
+          t.addEventListener('click', function () { show(parseInt(t.dataset.index, 10)); });
+        });
+        document.getElementById('prev-btn').addEventListener('click', function () { show(current - 1); });
+        document.getElementById('next-btn').addEventListener('click', function () { show(current + 1); });
+
+        show(0);
+      })();
+    </script>
+  {% else %}
+    <p class="text-muted">Ei vielä kuvia.{% if session.authed %} <a href="{{ url_for('views.event_upload', slug=event.slug) }}">Lataa ensimmäinen.</a>{% endif %}</p>
+  {% endif %}
+</div>
+{% endblock %}
