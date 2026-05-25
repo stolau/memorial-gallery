@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from flask import Flask, current_app, flash, jsonify, redirect, request, session, url_for
 from flask_babel import Babel, get_locale, gettext
 from werkzeug.exceptions import RequestEntityTooLarge
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from . import db
 
@@ -45,6 +46,11 @@ def create_app() -> Flask:
 
     Path(app.instance_path).mkdir(parents=True, exist_ok=True)
     Path(app.config["MEDIA_ROOT"]).mkdir(parents=True, exist_ok=True)
+
+    # Behind a reverse proxy (e.g. Caddy/nginx) trust its forwarded headers so the
+    # app sees the real https scheme and host. Enabled via BEHIND_PROXY in production.
+    if os.environ.get("BEHIND_PROXY", "").lower() in ("1", "true", "yes"):
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
     babel.init_app(app, locale_selector=_select_locale)
 
