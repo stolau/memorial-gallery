@@ -25,6 +25,9 @@ The UI is in Finnish.
 - **Password-protected editing** — the admin panel, adding photos, and editing details
   all require login behind a single shared password. Edit/upload controls are hidden
   from logged-out visitors.
+- **Bilingual (Finnish / English)** — UI text is translated with Flask-Babel. Visitors
+  switch language via the navbar toggle (choice persists in their session); `DEFAULT_LANG`
+  sets the initial language. Person/event content itself is shown as authored.
 - **Two run modes** via the `APP_MODE` env var:
   - `fullstack` (default) — server-rendered pages (Jinja2 + Bootstrap 5).
   - `api` — JSON endpoints only, intended for a future separate frontend (e.g. Node.js).
@@ -33,7 +36,7 @@ The UI is in Finnish.
 ## Requirements
 
 - Python 3.11+ (developed on 3.12)
-- See [`requirements.txt`](requirements.txt) — Flask and python-dotenv.
+- See [`requirements.txt`](requirements.txt) — Flask, python-dotenv, and Flask-Babel.
 
 ## Setup
 
@@ -71,6 +74,7 @@ Environment variables (loaded from `.env`):
 | `SECRET_KEY`      | `dev-only-…`  | Flask session signing key. **Set a long random value.**  |
 | `UPLOAD_PASSWORD` | `changeme`    | Shared password for login (editing & uploads).           |
 | `MAX_UPLOAD_MB`   | `100`         | Max total size of a single upload request, in megabytes. |
+| `DEFAULT_LANG`    | `fi`          | Initial UI language, `fi` or `en`. Visitors can still toggle. |
 
 ## CLI commands
 
@@ -127,11 +131,33 @@ app/
   auth.py            # login/logout + @login_required
   admin.py           # admin panel: add / delete people and events
   templates/         # Jinja2 templates (base, index, person, event, *_edit, *_upload, login, admin)
+  translations/      # Flask-Babel catalog (fi/LC_MESSAGES/messages.po + .mo); English is the source
   static/css/        # styles
+babel.cfg            # Babel extraction config
 instance/            # SQLite database (gitignored, created at runtime)
 media/<slug>/        # person photos; portraits under media/<slug>/profile/ (gitignored)
 media/events/<slug>/ # event photos (gitignored)
 ```
+
+## Translations
+
+UI strings are wrapped in `gettext`/`_()` using **English source keys** (msgids). English
+needs no catalog — those keys render as-is. Finnish lives in a compiled catalog at
+`app/translations/fi/`. After adding or changing any UI string:
+
+```bash
+# 1. Re-extract source strings (English keys)
+pybabel extract -F babel.cfg -o messages.pot .
+# 2. Merge new strings into the Finnish catalog
+pybabel update -i messages.pot -d app/translations -l fi
+# 3. Edit app/translations/fi/LC_MESSAGES/messages.po to translate new entries
+# 4. Compile to the .mo the app loads at runtime
+pybabel compile -d app/translations
+```
+
+The compiled `.mo` is committed so the app works without a build step. Because Finnish is
+the default (`DEFAULT_LANG=fi`) and comes from the catalog, remember to recompile after
+editing the `.po` — otherwise new strings fall back to their English keys.
 
 ## Notes
 

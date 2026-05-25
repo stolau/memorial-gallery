@@ -2,12 +2,12 @@
 {% block content %}
 <div class="container py-5">
   <section class="text-center mb-5">
-    <h1 class="display-4">Muistoksi</h1>
-    <p class="lead text-muted">Sukumme muistosivusto.</p>
+    <h1 class="display-4">{{ _('In memory') }}</h1>
+    <p class="lead text-muted">{{ _('Our family\'s memorial site.') }}</p>
   </section>
 
   <section>
-    <h2 class="h4 mb-3">Henkilöt</h2>
+    <h2 class="h4 mb-3">{{ _('People') }}</h2>
     {% if people %}
       <div class="row g-3">
         {% for p in people %}
@@ -26,12 +26,12 @@
         {% endfor %}
       </div>
     {% else %}
-      <p class="text-muted">Ei vielä henkilöitä.</p>
+      <p class="text-muted">{{ _('No people yet.') }}</p>
     {% endif %}
   </section>
 
   <section class="mt-5">
-    <h2 class="h4 mb-3">Tapahtumat</h2>
+    <h2 class="h4 mb-3">{{ _('Events') }}</h2>
     {% if events %}
       <div class="row g-3">
         {% for e in events %}
@@ -51,7 +51,7 @@
         {% endfor %}
       </div>
     {% else %}
-      <p class="text-muted">Ei vielä tapahtumia.</p>
+      <p class="text-muted">{{ _('No events yet.') }}</p>
     {% endif %}
   </section>
 </div>

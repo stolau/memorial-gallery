@@ -1,21 +1,21 @@
 {% extends "base.html" %}
-{% block title %}Lataa kuvia — {{ event.name }}{% endblock %}
+{% block title %}{{ _('Upload photos: %(name)s', name=event.name) }} — Kaijankoski{% endblock %}
 {% block content %}
 <div class="container py-4" style="max-width: 640px;">
-  <h1 class="h3 mb-3">Lataa kuvia: {{ event.name }}</h1>
+  <h1 class="h3 mb-3">{{ _('Upload photos: %(name)s', name=event.name) }}</h1>
   <form method="post" enctype="multipart/form-data">
     <div class="mb-3">
-      <label class="form-label">Kuvat</label>
+      <label class="form-label">{{ _('Photos') }}</label>
       <input type="file" name="photos" multiple class="form-control" required>
-      <div class="form-text">Tuetut muodot: JPG, PNG, GIF, WEBP.</div>
+      <div class="form-text">{{ _('Supported formats: JPG, PNG, GIF, WEBP.') }}</div>
     </div>
     <div class="mb-3">
-      <label class="form-label">Kuvateksti (vapaaehtoinen, sama kaikille)</label>
+      <label class="form-label">{{ _('Caption (optional, applied to all)') }}</label>
       <input type="text" name="caption" class="form-control">
     </div>
     <div class="d-flex gap-2">
-      <button type="submit" class="btn btn-primary">Lataa</button>
-      <a class="btn btn-outline-secondary" href="{{ url_for('views.event', slug=event.slug) }}">Takaisin galleriaan</a>
+      <button type="submit" class="btn btn-primary">{{ _('Upload') }}</button>
+      <a class="btn btn-outline-secondary" href="{{ url_for('views.event', slug=event.slug) }}">{{ _('Back to gallery') }}</a>
     </div>
   </form>
 </div>

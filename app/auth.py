@@ -1,6 +1,7 @@
 from functools import wraps
 
 from flask import Blueprint, current_app, flash, redirect, render_template, request, session, url_for
+from flask_babel import gettext
 
 bp = Blueprint("auth", __name__)
 
@@ -21,7 +22,7 @@ def login():
         if request.form.get("password") == current_app.config["UPLOAD_PASSWORD"]:
             session["authed"] = True
             return redirect(request.args.get("next") or url_for("views.index"))
-        flash("Väärä salasana.")
+        flash(gettext("Wrong password."))
     return render_template("login.html")
 
 

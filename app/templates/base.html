@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="fi">
+<html lang="{{ current_lang }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -11,14 +11,20 @@
   <nav class="navbar navbar-light bg-light border-bottom">
     <div class="container d-flex justify-content-between align-items-center">
       <a class="navbar-brand" href="{{ url_for('views.index') }}">Kaijankoski</a>
-      {% if session.authed %}
-        <div class="d-flex gap-2">
-          <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('admin.index') }}">Hallinta</a>
-          <form method="post" action="{{ url_for('auth.logout') }}" class="m-0">
-            <button type="submit" class="btn btn-sm btn-outline-secondary">Kirjaudu ulos</button>
-          </form>
+      <div class="d-flex gap-2 align-items-center">
+        <div class="btn-group btn-group-sm" role="group" aria-label="{{ _('Language') }}">
+          {% for code in languages %}
+            <a class="btn btn-outline-secondary {{ 'active' if code == current_lang }}"
+               href="{{ url_for('views.set_language', code=code) }}">{{ code|upper }}</a>
+          {% endfor %}
         </div>
-      {% endif %}
+        {% if session.authed %}
+          <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('admin.index') }}">{{ _('Admin') }}</a>
+          <form method="post" action="{{ url_for('auth.logout') }}" class="m-0">
+            <button type="submit" class="btn btn-sm btn-outline-secondary">{{ _('Log out') }}</button>
+          </form>
+        {% endif %}
+      </div>
     </div>
   </nav>
 
@@ -28,7 +34,7 @@
         {% for m in messages %}
           <div class="alert alert-info alert-dismissible fade show" role="alert">
             {{ m }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{{ _('Close') }}"></button>
           </div>
         {% endfor %}
       </div>
