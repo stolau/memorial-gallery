@@ -1,0 +1,262 @@
+================================================================
+ recap-configuration.txt
+ UpCloud VPS setup for kaijankoskensuku.fi (Flask memorial gallery)
+================================================================
+
+Scope:
+  From an empty UpCloud account to an Ubuntu VPS that is ready for
+  DEPLOY.md step 1. After section 8 below, you switch to DEPLOY.md
+  and follow that document to the end.
+
+Prerequisites:
+  - Domain kaijankoskensuku.fi already registered at shellit.org.
+  - A dedicated SSH keypair on your laptop (see section 1).
+  - ~10-15 minutes; recurring cost about EUR 5 / month.
+
+----------------------------------------------------------------
+ 1. Prep on your laptop
+----------------------------------------------------------------
+
+Confirm the dedicated key exists, then print its public half:
+
+    cat ~/.ssh/id_kaijankoski.pub
+
+You should see one line that starts with `ssh-ed25519 AAAA...`
+and ends with the label `kaijankoskensuku-vps`. Copy this line --
+you will paste it into UpCloud in section 3 (and again in the
+cloud-init script in section 5).
+
+If the key does not exist, create it once:
+
+    ssh-keygen -t ed25519 -f ~/.ssh/id_kaijankoski -C kaijankoskensuku-vps
+
+Use a passphrase if you want; press Enter twice for no passphrase.
+
+----------------------------------------------------------------
+ 2. Create an UpCloud account
+----------------------------------------------------------------
+
+  - Sign up at https://upcloud.com
+    (EU-based billing, no AWS-style per-GB egress fees, Helsinki DC).
+  - Verify the email and add a payment method.
+  - Top up the account; EUR 25 minimum is typical.
+
+----------------------------------------------------------------
+ 3. Add your SSH public key to UpCloud
+----------------------------------------------------------------
+
+In the UpCloud control panel:
+
+  People & permissions -> SSH keys -> Add SSH key
+
+Paste the line printed by `cat ~/.ssh/id_kaijankoski.pub`.
+Label it `kaijankoskensuku-vps`.
+
+Doing this once here means the key is available to tick on every
+future server, not just this one.
+
+----------------------------------------------------------------
+ 4. Deploy a Cloud Server
+----------------------------------------------------------------
+
+In the control panel: Servers -> Deploy a server.
+
+Settings to pick:
+
+  +---------------------+---------------------------------------------+
+  | Field               | Value                                       |
+  +---------------------+---------------------------------------------+
+  | Location            | Helsinki (HEL1)                             |
+  |                     | EU data residency, lowest latency in FI.    |
+  | Plan                | 1xCPU / 1 GB RAM / 25 GB SSD (~EUR 5/mo)    |
+  |                     | Plenty for this site; resize later if       |
+  |                     | photo storage grows.                        |
+  | Operating system    | Ubuntu 24.04 LTS                            |
+  | Hostname            | kaijankoski-vps  (any label is fine)        |
+  | SSH keys            | Tick `kaijankoskensuku-vps` (from section 3)|
+  | Initialization      | Paste the YAML from section 5 below         |
+  |   script            |                                             |
+  | Networking          | Public IPv4 (default); enable IPv6 too if   |
+  |                     | offered -- Caddy will use both.             |
+  +---------------------+---------------------------------------------+
+
+Click `Deploy`. Provisioning takes about 60-90 seconds. From the
+server detail page, write down the:
+
+  - Public IPv4 address  -> this is your `SERVER_IP` everywhere later.
+  - Public IPv6 address  -> optional, used for AAAA DNS records.
+
+----------------------------------------------------------------
+ 5. Initialization script (cloud-config)
+----------------------------------------------------------------
+
+Paste the following YAML into the "Initialization script" field
+during server creation. It runs once on first boot:
+
+  - creates a `deploy` user with passwordless sudo and your SSH key,
+  - locks down SSH (no password auth, no root login),
+  - installs the packages we need (python3-venv, ufw, fail2ban, ...),
+  - opens only ports 22 / 80 / 443 in the firewall,
+  - enables fail2ban and unattended security upgrades.
+
+----- begin cloud-config -----
+#cloud-config
+timezone: Europe/Helsinki
+
+users:
+  - name: deploy
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    shell: /bin/bash
+    ssh_authorized_keys:
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICaUeEeg978abijn9DwVIGqckpHfCXfD0a3B5w8wBGa3 kaijankoskensuku-vps
+
+ssh_pwauth: false
+disable_root: true
+
+package_update: true
+package_upgrade: true
+packages:
+  - python3
+  - python3-venv
+  - python3-pip
+  - ufw
+  - fail2ban
+  - unattended-upgrades
+  - rsync
+  - curl
+  - git
+
+runcmd:
+  - ufw default deny incoming
+  - ufw default allow outgoing
+  - ufw allow OpenSSH
+  - ufw allow 80/tcp
+  - ufw allow 443/tcp
+  - ufw --force enable
+  - systemctl enable --now fail2ban
+  - systemctl enable --now unattended-upgrades
+----- end cloud-config -----
+
+Notes:
+  - The `ssh_authorized_keys:` value must match the contents of
+    `~/.ssh/id_kaijankoski.pub`. If you ever regenerate the key,
+    update BOTH the UpCloud SSH-keys list AND this section.
+  - If UpCloud already attaches the key chosen in section 3,
+    keeping the same key in `ssh_authorized_keys:` is harmless;
+    cloud-init de-duplicates.
+
+----------------------------------------------------------------
+ 6. First SSH login & smoke checks
+----------------------------------------------------------------
+
+From your laptop:
+
+    ssh -i ~/.ssh/id_kaijankoski deploy@SERVER_IP
+
+Accept the host fingerprint on first login.
+
+Then, on the VPS, confirm everything came up cleanly:
+
+    cloud-init status --wait        # should print: status: done
+    sudo ufw status                 # 22, 80, 443 ALLOW
+    systemctl is-active fail2ban    # active
+    whoami                          # deploy
+    hostname                        # kaijankoski-vps
+
+Confirm that root SSH is refused (run this from your laptop):
+
+    ssh root@SERVER_IP
+    # expected: Permission denied (publickey).
+
+----------------------------------------------------------------
+ 7. Optional: Object Storage bucket (for off-VM photo storage)
+----------------------------------------------------------------
+
+If you want photos stored in a managed bucket rather than on the VPS disk
+(scales independently, no local backup needed for media), provision one
+before continuing with DEPLOY.md:
+
+  Control panel -> Object Storage -> Create instance
+    - Region: Helsinki (same as the server, so intra-DC traffic is free)
+    - Name:   anything; the bucket name is what you reference later
+
+Inside the new instance, create a bucket (e.g. `kaijankoski-media`) and:
+
+  - Attach a public-read policy (Allow s3:GetObject for principal "*")
+    so browsers can fetch images directly from the bucket URL.
+  - Create an access key + secret for the app to use. Save both --
+    the secret is only shown once.
+
+Note the bucket's:
+  - Endpoint URL  (e.g. https://hel1.upcloudobjects.com)
+  - Public base   (e.g. https://kaijankoski-media.hel1.upcloudobjects.com)
+  - Access key  /  Secret key
+
+These map to env vars in DEPLOY.md section 4 (.env):
+
+    STORAGE_BACKEND=s3
+    S3_ENDPOINT=...
+    S3_BUCKET=kaijankoski-media
+    S3_ACCESS_KEY=...
+    S3_SECRET_KEY=...
+    S3_PUBLIC_BASE=...
+
+After the app is deployed (DEPLOY.md steps 2-5), copy any existing photos
+into the bucket once:
+
+    cd /home/deploy/kaijankoski-webapp
+    .venv/bin/flask --app app migrate-media-to-s3
+
+See README -> Storage backends for the full reference.
+
+----------------------------------------------------------------
+ 7b. Optional: snapshots & backups
+----------------------------------------------------------------
+
+In the UpCloud control panel:
+
+  - Enable automatic backups for this server (small surcharge,
+    strongly recommended -- the gallery photos are irreplaceable).
+  - Take a manual snapshot now while the install is still clean.
+    You can roll back to it if a later step goes wrong.
+
+These are SEPARATE from the app-level tar backups configured in
+DEPLOY.md section 8. Keep both layers.
+
+----------------------------------------------------------------
+ 8. Hand-off to DEPLOY.md
+----------------------------------------------------------------
+
+You are now at the starting point of DEPLOY.md:
+
+  -> Continue with DEPLOY.md, step 1 (Point DNS at the server).
+
+When DEPLOY.md asks for `SERVER_IP`, use the IPv4 from section 4.
+When it tells you to `ssh deploy@SERVER_IP`, that user already
+exists thanks to the cloud-init script in section 5.
+
+----------------------------------------------------------------
+ Troubleshooting (UpCloud-specific)
+----------------------------------------------------------------
+
+  - `cloud-init status` reports `error` or hangs:
+        sudo journalctl -u cloud-init -e
+    Look for YAML parse errors -- usually a stray tab or a
+    mis-indented bullet under `users:` / `packages:`.
+
+  - SSH says `Permission denied (publickey)`:
+        Confirm the key was both (a) added under SSH keys in
+        section 3 AND (b) ticked during deploy in section 4.
+        Try with `-v` to see which key was offered:
+            ssh -v -i ~/.ssh/id_kaijankoski deploy@SERVER_IP
+
+  - Port 80 / 443 unreachable from the public internet:
+        On the VPS run `sudo ufw status`. UpCloud has no extra
+        firewall layer in front of the server by default, so
+        ufw is the only gate. Make sure rules from section 5
+        applied; if not, re-run them by hand.
+
+  - You picked the wrong plan or region:
+        Servers can be resized (plan up/down) and re-imaged from
+        a snapshot in the control panel. Region change requires
+        a snapshot -> redeploy in the new region.

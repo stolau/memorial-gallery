@@ -1,3 +1,4 @@
 Flask
 python-dotenv
 Flask-Babel
+boto3>=1.34

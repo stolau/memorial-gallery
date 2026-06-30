@@ -75,12 +75,14 @@ Environment variables (loaded from `.env`):
 | `UPLOAD_PASSWORD` | `changeme`    | Shared password for login (editing & uploads).           |
 | `MAX_UPLOAD_MB`   | `100`         | Max total size of a single upload request, in megabytes. |
 | `DEFAULT_LANG`    | `fi`          | Initial UI language, `fi` or `en`. Visitors can still toggle. |
+| `STORAGE_BACKEND` | `local`       | `local` (filesystem, default) or `s3` (S3-compatible bucket — see [Storage backends](#storage-backends)). |
 
 ## CLI commands
 
 ```bash
-flask --app app init-db      # create tables; also applies column migrations
-flask --app app seed-kalevi  # insert the initial "kalevi" person if missing
+flask --app app init-db              # create tables; also applies column migrations
+flask --app app seed-kalevi          # insert the initial "kalevi" person if missing
+flask --app app migrate-media-to-s3  # one-shot upload of media/ to the configured S3 bucket
 ```
 
 Re-running `init-db` is safe — tables use `CREATE TABLE IF NOT EXISTS` and new
@@ -158,6 +160,48 @@ pybabel compile -d app/translations
 The compiled `.mo` is committed so the app works without a build step. Because Finnish is
 the default (`DEFAULT_LANG=fi`) and comes from the catalog, remember to recompile after
 editing the `.po` — otherwise new strings fall back to their English keys.
+
+## Storage backends
+
+Photos can live either on the local filesystem (default) or in an S3-compatible
+object storage bucket (e.g. UpCloud Object Storage, AWS S3, MinIO). Switching is a
+one-line `.env` change followed by a one-shot migration.
+
+**`STORAGE_BACKEND=local`** (default) — files saved under `media/<slug>/...` and
+served by Flask via `send_from_directory`. Same behaviour the app has always had.
+
+**`STORAGE_BACKEND=s3`** — files uploaded to a bucket using `boto3`; the
+`/media/...` route 302-redirects to the direct bucket URL so image bytes never
+pass through the VM. Set all of:
+
+```
+STORAGE_BACKEND=s3
+S3_ENDPOINT=https://hel1.upcloudobjects.com
+S3_BUCKET=kaijankoski-media
+S3_ACCESS_KEY=...
+S3_SECRET_KEY=...
+S3_PUBLIC_BASE=https://kaijankoski-media.hel1.upcloudobjects.com
+# S3_REGION=    # optional; defaults to us-east-1 which most providers ignore
+```
+
+The bucket is assumed to be publicly readable (so `S3_PUBLIC_BASE/<key>` resolves
+directly in a browser). For UpCloud Object Storage, attach a bucket policy that
+allows `s3:GetObject` for `*`.
+
+If `STORAGE_BACKEND=s3` is set without all of those vars, the app refuses to
+start and tells you which ones are missing.
+
+**One-shot migration of existing photos:**
+
+```bash
+# After setting STORAGE_BACKEND=s3 and the S3_* vars in .env:
+flask --app app migrate-media-to-s3
+```
+
+Walks every file under `media/` and uploads it with a matching object key
+(`<slug>/<file>` for people, `<slug>/profile/<file>` for portraits,
+`events/<slug>/<file>` for events). After this completes, the bucket is the
+single source of truth; the local `media/` directory can be deleted.
 
 ## Notes
 

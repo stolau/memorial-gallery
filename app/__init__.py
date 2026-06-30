@@ -8,6 +8,7 @@ from werkzeug.exceptions import RequestEntityTooLarge
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from . import db
+from .storage import LocalStorage, S3Storage
 
 LANGUAGES = ("fi", "en")
 
@@ -42,10 +43,35 @@ def create_app() -> Flask:
         LANGUAGES=LANGUAGES,
         DEFAULT_LANG=default_lang,
         BABEL_DEFAULT_LOCALE=default_lang,
+        STORAGE_BACKEND=os.environ.get("STORAGE_BACKEND", "local").lower(),
+        S3_ENDPOINT=os.environ.get("S3_ENDPOINT", ""),
+        S3_BUCKET=os.environ.get("S3_BUCKET", ""),
+        S3_ACCESS_KEY=os.environ.get("S3_ACCESS_KEY", ""),
+        S3_SECRET_KEY=os.environ.get("S3_SECRET_KEY", ""),
+        S3_PUBLIC_BASE=os.environ.get("S3_PUBLIC_BASE", ""),
+        S3_REGION=os.environ.get("S3_REGION", ""),
     )
 
     Path(app.instance_path).mkdir(parents=True, exist_ok=True)
     Path(app.config["MEDIA_ROOT"]).mkdir(parents=True, exist_ok=True)
+
+    if app.config["STORAGE_BACKEND"] == "s3":
+        required = ("S3_ENDPOINT", "S3_BUCKET", "S3_ACCESS_KEY", "S3_SECRET_KEY", "S3_PUBLIC_BASE")
+        missing = [k for k in required if not app.config[k]]
+        if missing:
+            raise RuntimeError(
+                "STORAGE_BACKEND=s3 requires these env vars: " + ", ".join(missing)
+            )
+        app.extensions["storage"] = S3Storage(
+            endpoint=app.config["S3_ENDPOINT"],
+            bucket=app.config["S3_BUCKET"],
+            access_key=app.config["S3_ACCESS_KEY"],
+            secret_key=app.config["S3_SECRET_KEY"],
+            public_base=app.config["S3_PUBLIC_BASE"],
+            region=app.config["S3_REGION"] or None,
+        )
+    else:
+        app.extensions["storage"] = LocalStorage(app.config["MEDIA_ROOT"])
 
     # Behind a reverse proxy (e.g. Caddy/nginx) trust its forwarded headers so the
     # app sees the real https scheme and host. Enabled via BEHIND_PROXY in production.
@@ -60,6 +86,14 @@ def create_app() -> Flask:
         return {
             "current_lang": str(loc) if loc else app.config["DEFAULT_LANG"],
             "languages": app.config["LANGUAGES"],
+        }
+
+    @app.context_processor
+    def _inject_media_helpers():
+        storage = app.extensions["storage"]
+        return {
+            "person_photo_url": storage.person_photo_url,
+            "event_photo_url": storage.event_photo_url,
         }
 
     @app.errorhandler(RequestEntityTooLarge)

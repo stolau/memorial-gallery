@@ -35,7 +35,7 @@
       <legend class="form-label fs-6 mb-2">{{ _('Profile picture') }}</legend>
       {% if person.profile_image %}
         <div class="d-flex align-items-start gap-3 mb-2">
-          <img src="{{ url_for('views.media', slug=person.slug, filename=person.profile_image) }}"
+          <img src="{{ person_photo_url(person.slug, person.profile_image) }}"
                alt="" class="profile-img profile-img--preview rounded">
           <div class="form-check">
             <input class="form-check-input" type="checkbox" id="remove_profile_image" name="remove_profile_image">
