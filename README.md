@@ -28,9 +28,9 @@ The UI is in Finnish.
 - **Bilingual (Finnish / English)** — UI text is translated with Flask-Babel. Visitors
   switch language via the navbar toggle (choice persists in their session); `DEFAULT_LANG`
   sets the initial language. Person/event content itself is shown as authored.
-- **Two run modes** via the `APP_MODE` env var:
-  - `fullstack` (default) — server-rendered pages (Jinja2 + Bootstrap 5).
-  - `api` — JSON endpoints only, intended for a future separate frontend (e.g. Node.js).
+- **Single-origin app** — server-rendered pages (Jinja2 + Bootstrap 5) and JSON
+  endpoints under `/api` are served from the same Flask app, ready for a future
+  separate frontend (e.g. Node.js) to consume the API.
 - **SQLite** storage with a tiny built-in migration step; no database server needed.
 
 ## Requirements
@@ -70,7 +70,6 @@ Environment variables (loaded from `.env`):
 
 | Variable          | Default       | Description                                              |
 |-------------------|---------------|----------------------------------------------------------|
-| `APP_MODE`        | `fullstack`   | `fullstack` (HTML pages) or `api` (JSON only).           |
 | `SECRET_KEY`      | `dev-only-…`  | Flask session signing key. **Set a long random value.**  |
 | `UPLOAD_PASSWORD` | `changeme`    | Shared password for login (editing & uploads).           |
 | `MAX_UPLOAD_MB`   | `100`         | Max total size of a single upload request, in megabytes. |
@@ -90,46 +89,42 @@ columns are added idempotently.
 
 ## Routes
 
-### Full-stack mode (`APP_MODE=fullstack`)
+All routes below are served from the same app.
 
-| Method   | Path                          | Description                                       |
-|----------|-------------------------------|---------------------------------------------------|
-| GET      | `/`                           | Landing page, list of people (with portraits).    |
-| GET      | `/<slug>`                     | A person's gallery. Add `?showinfo=true` to open the details modal automatically. |
-| GET/POST | `/<slug>/edit`                | Edit person details (login).                      |
-| GET/POST | `/<slug>/upload`              | Upload photos (login).                            |
-| GET      | `/media/<slug>/<file>`        | Serve an uploaded person image.                   |
-| GET      | `/event/<slug>`               | An event's page: inline details + gallery.        |
-| GET/POST | `/event/<slug>/edit`          | Edit event details (login).                       |
-| GET/POST | `/event/<slug>/upload`        | Upload event photos (login).                      |
-| GET      | `/event-media/<slug>/<file>`  | Serve an uploaded event image.                    |
-| GET      | `/admin/`                     | Admin panel: list/manage people and events (login). |
-| POST     | `/admin/people`               | Create a new person (login).                      |
-| POST     | `/admin/people/<slug>/delete` | Delete a person and all their media (login).      |
-| POST     | `/admin/events`               | Create a new event (login).                       |
-| POST     | `/admin/events/<slug>/delete` | Delete an event and all its media (login).        |
-| GET/POST | `/login`                      | Login form.                                       |
-| POST     | `/logout`                     | Log out.                                           |
-
-### API mode (`APP_MODE=api`)
-
-| Method | Path                  | Description                          |
-|--------|-----------------------|--------------------------------------|
-| GET    | `/api/people`         | List of people (JSON).               |
-| GET    | `/api/people/<slug>`  | A person plus their photos (JSON).   |
-| GET    | `/api/events`         | List of events (JSON).               |
-| GET    | `/api/events/<slug>`  | An event plus its photos (JSON).     |
+| Method   | Path                            | Description                                       |
+|----------|---------------------------------|---------------------------------------------------|
+| GET      | `/`                             | Landing page, list of people (with portraits).    |
+| GET      | `/<slug>`                       | A person's gallery. Add `?showinfo=true` to open the details modal automatically. |
+| GET/POST | `/<slug>/edit`                  | Edit person details (login).                      |
+| GET/POST | `/<slug>/upload`                | Upload photos (login).                            |
+| GET      | `/media/<slug>/<file>`          | Serve an uploaded person image.                   |
+| GET      | `/event/<slug>`                 | An event's page: inline details + gallery.        |
+| GET/POST | `/event/<slug>/edit`            | Edit event details (login).                       |
+| GET/POST | `/event/<slug>/upload`          | Upload event photos (login).                      |
+| GET      | `/media/events/<slug>/<file>`   | Serve an uploaded event image.                    |
+| GET      | `/admin/`                       | Admin panel: list/manage people and events (login). |
+| POST     | `/admin/people`                 | Create a new person (login).                      |
+| POST     | `/admin/people/<slug>/delete`   | Delete a person and all their media (login).      |
+| POST     | `/admin/events`                 | Create a new event (login).                       |
+| POST     | `/admin/events/<slug>/delete`   | Delete an event and all its media (login).        |
+| GET/POST | `/login`                        | Login form.                                       |
+| POST     | `/logout`                       | Log out.                                           |
+| GET      | `/api/people`                   | List of people (JSON).               |
+| GET      | `/api/people/<slug>`            | A person plus their photos (JSON).   |
+| GET      | `/api/events`                   | List of events (JSON).               |
+| GET      | `/api/events/<slug>`            | An event plus its photos (JSON).     |
 
 ## Project layout
 
 ```
 app/
-  __init__.py        # app factory, config, APP_MODE switch, error handlers
+  __init__.py        # app factory, config, blueprint registration, error handlers
   db.py              # SQLite connection, schema init/migrations, CLI commands
   schema.sql         # table definitions
-  models.py          # data-access layer (shared by both modes)
+  models.py          # data-access layer (shared by views and api)
   views.py           # full-stack routes (HTML)
   api.py             # API routes (JSON)
+  media.py           # photo-serving routes (local files or S3 redirect)
   auth.py            # login/logout + @login_required
   admin.py           # admin panel: add / delete people and events
   templates/         # Jinja2 templates (base, index, person, event, *_edit, *_upload, login, admin)

@@ -1,6 +1,7 @@
-from flask import Blueprint, abort, jsonify, url_for
+from flask import Blueprint, abort, jsonify
 
 from . import models
+from .storage import get_storage
 
 bp = Blueprint("api", __name__, url_prefix="/api")
 
@@ -17,7 +18,7 @@ def person(slug: str):
         abort(404)
     photos = models.list_photos(p["id"])
     for ph in photos:
-        ph["url"] = url_for("views.media", slug=slug, filename=ph["filename"], _external=False)
+        ph["url"] = get_storage().person_photo_url(slug, ph["filename"])
     return jsonify({"person": p, "photos": photos})
 
 
@@ -33,5 +34,5 @@ def event(slug: str):
         abort(404)
     photos = models.list_event_photos(e["id"])
     for ph in photos:
-        ph["url"] = url_for("views.event_media", slug=slug, filename=ph["filename"], _external=False)
+        ph["url"] = get_storage().event_photo_url(slug, ph["filename"])
     return jsonify({"event": e, "photos": photos})

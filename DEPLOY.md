@@ -66,7 +66,6 @@ nano .env
 Set in `.env`:
 
 ```
-APP_MODE=fullstack
 SECRET_KEY=<paste the generated value>
 UPLOAD_PASSWORD=<a strong password you choose>
 MAX_UPLOAD_MB=100
