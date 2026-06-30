@@ -3,8 +3,10 @@ import { Link } from "react-router-dom";
 import { getEvents } from "../api/client";
 import type { Event } from "../api/types";
 import Layout from "../components/Layout";
+import { useT } from "../i18n/LangContext";
 
 function EventsIndex() {
+  const t = useT();
   const [events, setEvents] = useState<Event[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -16,10 +18,10 @@ function EventsIndex() {
 
   return (
     <Layout>
-      <h1>Events</h1>
+      <h1>{t("events.title")}</h1>
       {error && <p role="alert">{error}</p>}
-      {!error && events === null && <p>Loading…</p>}
-      {events && events.length === 0 && <p>No events yet.</p>}
+      {!error && events === null && <p>{t("common.loading")}</p>}
+      {events && events.length === 0 && <p>{t("events.empty")}</p>}
       {events && events.length > 0 && (
         <ul className="events-grid">
           {events.map((event) => (
