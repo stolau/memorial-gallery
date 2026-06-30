@@ -49,8 +49,8 @@
                   <td class="text-end">
                     <div class="btn-group btn-group-sm me-2">
                       <a class="btn btn-outline-secondary" href="{{ url_for('views.person', slug=p.slug) }}">{{ _('Open') }}</a>
-                      <a class="btn btn-outline-secondary" href="{{ url_for('views.edit', slug=p.slug) }}">{{ _('Edit') }}</a>
-                      <a class="btn btn-outline-secondary" href="{{ url_for('views.upload', slug=p.slug) }}">{{ _('Photos') }}</a>
+                      <a class="btn btn-outline-secondary" href="{{ url_for('admin.edit', slug=p.slug) }}">{{ _('Edit') }}</a>
+                      <a class="btn btn-outline-secondary" href="{{ url_for('admin.upload', slug=p.slug) }}">{{ _('Photos') }}</a>
                     </div>
                     <form method="post" action="{{ url_for('admin.delete', slug=p.slug) }}"
                           class="d-inline js-delete" data-name="{{ p.display_name }}">
@@ -113,8 +113,8 @@
                   <td class="text-end">
                     <div class="btn-group btn-group-sm me-2">
                       <a class="btn btn-outline-secondary" href="{{ url_for('views.event', slug=e.slug) }}">{{ _('Open') }}</a>
-                      <a class="btn btn-outline-secondary" href="{{ url_for('views.event_edit', slug=e.slug) }}">{{ _('Edit') }}</a>
-                      <a class="btn btn-outline-secondary" href="{{ url_for('views.event_upload', slug=e.slug) }}">{{ _('Photos') }}</a>
+                      <a class="btn btn-outline-secondary" href="{{ url_for('admin.event_edit', slug=e.slug) }}">{{ _('Edit') }}</a>
+                      <a class="btn btn-outline-secondary" href="{{ url_for('admin.event_upload', slug=e.slug) }}">{{ _('Photos') }}</a>
                     </div>
                     <form method="post" action="{{ url_for('admin.delete_event', slug=e.slug) }}"
                           class="d-inline js-delete" data-name="{{ e.name }}">
