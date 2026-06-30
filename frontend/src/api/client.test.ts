@@ -15,6 +15,7 @@ describe("api client", () => {
         display_name: "Kalevi",
         bio: "Grandfather",
         profile_image: null,
+        profile_image_url: null,
       },
       {
         id: 2,
@@ -22,6 +23,7 @@ describe("api client", () => {
         display_name: "Aino",
         bio: null,
         profile_image: "aino.jpg",
+        profile_image_url: "/media/aino/profile/aino.jpg",
       },
     ];
 
@@ -88,6 +90,7 @@ describe("api client", () => {
         display_name: "Kalevi",
         bio: null,
         profile_image: null,
+        profile_image_url: null,
         birth_year: 1920,
         death_year: 1998,
         birthplace: "Helsinki",
