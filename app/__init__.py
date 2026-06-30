@@ -34,7 +34,6 @@ def create_app() -> Flask:
     max_upload_mb = int(os.environ.get("MAX_UPLOAD_MB", "100"))
     app.config.update(
         SECRET_KEY=os.environ.get("SECRET_KEY", "dev-only-change-me"),
-        APP_MODE=os.environ.get("APP_MODE", "fullstack").lower(),
         UPLOAD_PASSWORD=os.environ.get("UPLOAD_PASSWORD", "changeme"),
         DATABASE=str(Path(app.instance_path) / "gallery.db"),
         MEDIA_ROOT=str(Path(app.root_path).parent / "media"),
@@ -99,7 +98,7 @@ def create_app() -> Flask:
     @app.errorhandler(RequestEntityTooLarge)
     def too_large(_e):
         limit = app.config["MAX_UPLOAD_MB"]
-        if app.config["APP_MODE"] == "api":
+        if request.path.startswith("/api"):
             return jsonify(error=gettext("Upload too large (limit %(limit)s MB).", limit=limit)), 413
         flash(gettext(
             "The upload is too large (limit %(limit)s MB). Choose fewer or smaller photos.",
@@ -109,15 +108,12 @@ def create_app() -> Flask:
 
     db.init_app(app)
 
-    if app.config["APP_MODE"] == "api":
-        from . import api
+    from . import admin, api, auth, media, views
 
-        app.register_blueprint(api.bp)
-    else:
-        from . import admin, auth, views
-
-        app.register_blueprint(views.bp)
-        app.register_blueprint(auth.bp)
-        app.register_blueprint(admin.bp)
+    app.register_blueprint(views.bp)
+    app.register_blueprint(auth.bp)
+    app.register_blueprint(admin.bp)
+    app.register_blueprint(api.bp)
+    app.register_blueprint(media.bp)
 
     return app

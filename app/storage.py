@@ -54,10 +54,10 @@ class LocalStorage:
         shutil.rmtree(self.root / "events" / slug, ignore_errors=True)
 
     def person_photo_url(self, slug: str, filename: str) -> str:
-        return url_for("views.media", slug=slug, filename=filename)
+        return url_for("media.person", slug=slug, filename=filename)
 
     def event_photo_url(self, slug: str, filename: str) -> str:
-        return url_for("views.event_media", slug=slug, filename=filename)
+        return url_for("media.event", slug=slug, filename=filename)
 
 
 class S3Storage:

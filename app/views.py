@@ -1,7 +1,7 @@
 import secrets
 from pathlib import Path
 
-from flask import Blueprint, abort, current_app, flash, redirect, request, render_template, send_from_directory, session, url_for
+from flask import Blueprint, abort, current_app, flash, redirect, request, render_template, session, url_for
 from flask_babel import gettext, ngettext
 from werkzeug.utils import secure_filename
 
@@ -159,14 +159,6 @@ def upload(slug: str):
     return render_template("upload.html", person=p)
 
 
-@bp.route("/media/<slug>/<path:filename>")
-def media(slug: str, filename: str):
-    if current_app.config["STORAGE_BACKEND"] == "s3":
-        return redirect(get_storage().person_photo_url(slug, filename), code=302)
-    directory = Path(current_app.config["MEDIA_ROOT"]) / slug
-    return send_from_directory(directory, filename)
-
-
 # --- Events ---------------------------------------------------------------
 
 
@@ -229,11 +221,3 @@ def event_upload(slug: str):
         return redirect(url_for("views.event", slug=slug))
 
     return render_template("event_upload.html", event=e)
-
-
-@bp.route("/event-media/<slug>/<path:filename>")
-def event_media(slug: str, filename: str):
-    if current_app.config["STORAGE_BACKEND"] == "s3":
-        return redirect(get_storage().event_photo_url(slug, filename), code=302)
-    directory = Path(current_app.config["MEDIA_ROOT"]) / "events" / slug
-    return send_from_directory(directory, filename)
