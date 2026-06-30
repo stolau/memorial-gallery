@@ -86,4 +86,35 @@ describe("PeopleIndex", () => {
     await waitFor(() => expect(mockedGetPeople).toHaveBeenCalledTimes(1));
     await screen.findByText("Kalevi Koski");
   });
+
+  it("shows loading state before the promise resolves", () => {
+    // Explicit <Person[]> type param: a bare new Promise(() => {}) infers
+    // Promise<unknown> and fails typecheck against getPeople's Promise<Person[]>.
+    mockedGetPeople.mockReturnValue(new Promise<Person[]>(() => {}));
+
+    render(
+      <MemoryRouter>
+        <PeopleIndex />
+      </MemoryRouter>,
+    );
+
+    // people === null && error === null -> the loading paragraph renders.
+    expect(screen.getByText("Ladataan…")).toBeTruthy();
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("shows an error alert when getPeople rejects", async () => {
+    mockedGetPeople.mockRejectedValue(new Error("Network down"));
+
+    render(
+      <MemoryRouter>
+        <PeopleIndex />
+      </MemoryRouter>,
+    );
+
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toBe("Network down");
+    expect(screen.queryByText("Ladataan…")).toBeNull();
+    expect(screen.queryByText("Aino Koski")).toBeNull();
+  });
 });
