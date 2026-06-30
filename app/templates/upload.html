@@ -15,7 +15,7 @@
     </div>
     <div class="d-flex gap-2">
       <button type="submit" class="btn btn-primary">{{ _('Upload') }}</button>
-      <a class="btn btn-outline-secondary" href="{{ url_for('views.person', slug=person.slug) }}">{{ _('Back to gallery') }}</a>
+      <a class="btn btn-outline-secondary" href="/{{ person.slug }}">{{ _('Back to gallery') }}</a>
     </div>
   </form>
 </div>

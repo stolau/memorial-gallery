@@ -1,12 +1,10 @@
-"""Proof of the in-handler ``abort(404)`` branches for unknown slugs.
+"""Proof of the in-handler ``abort(404)`` branches for unknown slugs in the API.
 
-These are genuine handler branches, not Werkzeug "no matching route" 404s:
+After the SPA migration the old Jinja views are gone: an unknown person slug like
+``/ghost-person`` now resolves to the SPA index (200) and ``/event/<slug>`` is a
+301 redirect, so neither is a 404 anymore. The genuine handler ``abort(404)``
+branches that remain live on the API blueprint:
 
-  * ``views.person``  -- ``@bp.route("/<slug>")`` is a catch-all, so an unknown
-    person slug like ``/ghost-person`` DOES match the route and reaches
-    ``models.get_person(...) -> None -> abort(404)`` (app/views.py).
-  * ``views.event``   -- ``/event/<slug>`` reaches ``abort(404)`` for an unknown
-    event slug (app/views.py).
   * ``api.person``    -- ``/api/people/<slug>`` -> ``abort(404)`` (app/api.py).
   * ``api.event``     -- ``/api/events/<slug>`` -> ``abort(404)`` (app/api.py).
 
@@ -20,12 +18,6 @@ from __future__ import annotations
 
 
 def test_unknown_slugs_return_404(client):
-    assert client.get("/ghost-person").status_code == 404, (
-        "views.person (/<slug> catch-all) should abort(404) for an unknown person slug"
-    )
-    assert client.get("/event/no-such-event").status_code == 404, (
-        "views.event (/event/<slug>) should abort(404) for an unknown event slug"
-    )
     assert client.get("/api/people/ghost-person").status_code == 404, (
         "api.person (/api/people/<slug>) should abort(404) for an unknown person slug"
     )

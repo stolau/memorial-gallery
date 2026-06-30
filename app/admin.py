@@ -160,7 +160,7 @@ def edit(slug: str):
 
         models.update_person(slug, **update_kwargs)
         flash(gettext("Details updated."))
-        return redirect(url_for("views.person", slug=slug))
+        return redirect("/" + slug)
 
     return render_template("edit_person.html", person=p)
 
@@ -213,7 +213,7 @@ def upload(slug: str):
             lambda name: models.add_photo(p["id"], name, caption),
         )
         _flash_upload_result(saved, skipped)
-        return redirect(url_for("views.person", slug=slug))
+        return redirect("/" + slug)
 
     return render_template("upload.html", person=p)
 
@@ -235,7 +235,7 @@ def event_edit(slug: str):
             place=_str_or_none(request.form.get("place")),
         )
         flash(gettext("Details updated."))
-        return redirect(url_for("views.event", slug=slug))
+        return redirect("/events/" + slug)
 
     return render_template("event_edit.html", event=e)
 
@@ -257,6 +257,6 @@ def event_upload(slug: str):
             lambda name: models.add_event_photo(e["id"], name, caption),
         )
         _flash_upload_result(saved, skipped)
-        return redirect(url_for("views.event", slug=slug))
+        return redirect("/events/" + slug)
 
     return render_template("event_upload.html", event=e)

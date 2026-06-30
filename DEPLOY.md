@@ -53,6 +53,22 @@ python3 -m venv .venv
 .venv/bin/pip install gunicorn          # production WSGI server
 ```
 
+## 3b. Build the frontend SPA
+
+The React frontend (Vite + TypeScript) is served single-origin by the Flask `spa`
+blueprint out of `frontend/dist/`. That directory is gitignored, so build it on the
+server (needs Node 18+):
+
+```bash
+cd /home/deploy/kaijankoski-webapp/frontend
+npm ci
+npm run build                           # produces frontend/dist/
+```
+
+Flask serves `frontend/dist/index.html` and `frontend/dist/assets/*` through the
+existing Caddy reverse proxy, so **no Caddy change is needed**. Vite's `base` is the
+default `/`, which is correct for serving from the site root.
+
 ## 4. Production environment file
 
 ```bash
@@ -195,6 +211,8 @@ rsync -av --exclude='.venv' --exclude='__pycache__' --exclude='*.pyc' \
 
 # on the server, if dependencies changed:
 cd /home/deploy/kaijankoski-webapp && .venv/bin/pip install -r requirements.txt
+# if the frontend changed, rebuild the SPA (frontend/dist is gitignored, built on the server):
+cd /home/deploy/kaijankoski-webapp/frontend && npm ci && npm run build
 # restart the app:
 sudo systemctl restart kaijankoski
 ```
