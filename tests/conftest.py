@@ -52,6 +52,13 @@ def _seed(media_root: Path) -> None:
     (media_root / "kalevi" / "p-aaaa.jpg").write_bytes(JPEG_BYTES)
     models.add_photo(kalevi_id, "p-aaaa.jpg")
 
+    # Person 'aino' WITH a profile image (exercises the profile_image_url enrich).
+    aino_id = models.create_person("aino", "Aino", profile_image="profile/aino.jpg")
+    (media_root / "aino" / "profile").mkdir(parents=True, exist_ok=True)
+    (media_root / "aino" / "profile" / "aino.jpg").write_bytes(JPEG_BYTES)
+    (media_root / "aino" / "p-aino.jpg").write_bytes(JPEG_BYTES)
+    models.add_photo(aino_id, "p-aino.jpg")
+
     # Event 'party' with one photo.
     party_id = models.create_event("party", "Party")
     (media_root / "events" / "party").mkdir(parents=True, exist_ok=True)

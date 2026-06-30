@@ -12,6 +12,7 @@ export interface Person {
   display_name: string;
   bio: string | null;
   profile_image: string | null;
+  profile_image_url: string | null;
 }
 
 export interface PersonDetailData extends Person {
@@ -34,9 +35,10 @@ export interface Event {
   event_time: string | null;
   place: string | null;
   cover_filename: string | null;
+  cover_url: string | null;
 }
 
-export type EventDetailData = Omit<Event, "cover_filename">;
+export type EventDetailData = Omit<Event, "cover_filename" | "cover_url">;
 
 export interface EventDetail {
   event: EventDetailData;
