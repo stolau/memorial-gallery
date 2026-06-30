@@ -1,8 +1,10 @@
 import type { Photo } from "../api/types";
+import { useT } from "../i18n/LangContext";
 
 function PhotoGrid({ photos }: { photos: Photo[] }) {
+  const t = useT();
   if (photos.length === 0) {
-    return <p className="photo-grid-empty">No photos yet.</p>;
+    return <p className="photo-grid-empty">{t("photos.empty")}</p>;
   }
   return (
     <div className="photo-grid">

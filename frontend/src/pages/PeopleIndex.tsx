@@ -3,8 +3,10 @@ import { Link } from "react-router-dom";
 import { getPeople } from "../api/client";
 import type { Person } from "../api/types";
 import Layout from "../components/Layout";
+import { useT } from "../i18n/LangContext";
 
 function PeopleIndex() {
+  const t = useT();
   const [people, setPeople] = useState<Person[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -16,9 +18,9 @@ function PeopleIndex() {
 
   return (
     <Layout>
-      <h1>People</h1>
+      <h1>{t("people.title")}</h1>
       {error && <p role="alert">{error}</p>}
-      {!error && people === null && <p>Loading…</p>}
+      {!error && people === null && <p>{t("common.loading")}</p>}
       {people && (
         <ul className="people-grid">
           {people.map((person) => (
