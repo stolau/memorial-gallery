@@ -1,6 +1,7 @@
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "--cov=app --cov-report=term-missing"
+addopts = "--cov=app --cov-report=term-missing -m 'not e2e'"
+markers = ["e2e: real-browser end-to-end smoke tests (needs chromium + built frontend/dist; excluded by default)"]
 
 [tool.coverage.run]
 source = ["app"]
