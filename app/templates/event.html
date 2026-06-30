@@ -8,8 +8,8 @@
     <h1 class="mb-0">{{ event.name }}</h1>
     {% if session.authed %}
       <div class="btn-group btn-group-sm" role="group">
-        <a class="btn btn-outline-secondary" href="{{ url_for('views.event_edit', slug=event.slug) }}">{{ _('Edit details') }}</a>
-        <a class="btn btn-outline-secondary" href="{{ url_for('views.event_upload', slug=event.slug) }}">{{ _('Add photos') }}</a>
+        <a class="btn btn-outline-secondary" href="{{ url_for('admin.event_edit', slug=event.slug) }}">{{ _('Edit details') }}</a>
+        <a class="btn btn-outline-secondary" href="{{ url_for('admin.event_upload', slug=event.slug) }}">{{ _('Add photos') }}</a>
       </div>
     {% endif %}
   </div>
@@ -81,7 +81,7 @@
       })();
     </script>
   {% else %}
-    <p class="text-muted">{{ _('No photos yet.') }}{% if session.authed %} <a href="{{ url_for('views.event_upload', slug=event.slug) }}">{{ _('Upload the first one.') }}</a>{% endif %}</p>
+    <p class="text-muted">{{ _('No photos yet.') }}{% if session.authed %} <a href="{{ url_for('admin.event_upload', slug=event.slug) }}">{{ _('Upload the first one.') }}</a>{% endif %}</p>
   {% endif %}
 </div>
 {% endblock %}
