@@ -50,6 +50,9 @@ def create_app() -> Flask:
         S3_SECRET_KEY=os.environ.get("S3_SECRET_KEY", ""),
         S3_PUBLIC_BASE=os.environ.get("S3_PUBLIC_BASE", ""),
         S3_REGION=os.environ.get("S3_REGION", ""),
+        SESSION_COOKIE_SAMESITE="Lax",
+        SESSION_COOKIE_HTTPONLY=True,
+        SESSION_COOKIE_SECURE=os.environ.get("SESSION_COOKIE_SECURE", os.environ.get("BEHIND_PROXY", "")).lower() in ("1", "true", "yes"),
     )
 
     Path(app.instance_path).mkdir(parents=True, exist_ok=True)
@@ -109,12 +112,13 @@ def create_app() -> Flask:
 
     db.init_app(app)
 
-    from . import admin, api, auth, media, spa, views
+    from . import admin, admin_api, api, auth, media, spa, views
 
     app.register_blueprint(views.bp)
     app.register_blueprint(auth.bp)
     app.register_blueprint(admin.bp)
     app.register_blueprint(api.bp)
+    app.register_blueprint(admin_api.bp)
     app.register_blueprint(media.bp)
     app.register_blueprint(spa.bp)
 
