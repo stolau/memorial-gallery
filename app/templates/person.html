@@ -35,7 +35,7 @@
             <div class="row g-3 align-items-start">
               {% if person.profile_image %}
                 <div class="col-12 col-md-auto text-center">
-                  <img src="{{ url_for('views.media', slug=person.slug, filename=person.profile_image) }}"
+                  <img src="{{ person_photo_url(person.slug, person.profile_image) }}"
                        alt="{{ person.display_name }}" class="profile-img rounded">
                 </div>
               {% endif %}
@@ -84,7 +84,7 @@
       <div class="thumb-strip d-flex flex-wrap gap-2 justify-content-center">
         {% for ph in photos %}
           <button type="button" class="thumb-btn" data-index="{{ loop.index0 }}" aria-label="{{ _('Show photo %(n)s', n=loop.index) }}">
-            <img src="{{ url_for('views.media', slug=person.slug, filename=ph.filename) }}"
+            <img src="{{ person_photo_url(person.slug, ph.filename) }}"
                  alt="{{ ph.caption or '' }}" class="thumb-img">
           </button>
         {% endfor %}

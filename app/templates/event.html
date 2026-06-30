@@ -44,7 +44,7 @@
       <div class="thumb-strip d-flex flex-wrap gap-2 justify-content-center">
         {% for ph in photos %}
           <button type="button" class="thumb-btn" data-index="{{ loop.index0 }}" aria-label="{{ _('Show photo %(n)s', n=loop.index) }}">
-            <img src="{{ url_for('views.event_media', slug=event.slug, filename=ph.filename) }}"
+            <img src="{{ event_photo_url(event.slug, ph.filename) }}"
                  alt="{{ ph.caption or '' }}" class="thumb-img">
           </button>
         {% endfor %}

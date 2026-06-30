@@ -1,13 +1,12 @@
 import re
-import shutil
 import unicodedata
-from pathlib import Path
 
-from flask import Blueprint, abort, current_app, flash, redirect, render_template, request, url_for
+from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 from flask_babel import gettext
 
 from . import models
 from .auth import login_required
+from .storage import get_storage
 
 bp = Blueprint("admin", __name__, url_prefix="/admin")
 
@@ -67,9 +66,7 @@ def delete(slug: str):
     if not p:
         abort(404)
     models.delete_person(p["id"])
-    media_dir = Path(current_app.config["MEDIA_ROOT"]) / slug
-    if media_dir.exists():
-        shutil.rmtree(media_dir, ignore_errors=True)
+    get_storage().delete_person_all(slug)
     flash(gettext('Person "%(name)s" and all photos deleted.', name=p["display_name"]))
     return redirect(url_for("admin.index"))
 
@@ -100,8 +97,6 @@ def delete_event(slug: str):
     if not e:
         abort(404)
     models.delete_event(e["id"])
-    media_dir = Path(current_app.config["MEDIA_ROOT"]) / "events" / slug
-    if media_dir.exists():
-        shutil.rmtree(media_dir, ignore_errors=True)
+    get_storage().delete_event_all(slug)
     flash(gettext('Event "%(name)s" and all photos deleted.', name=e["name"]))
     return redirect(url_for("admin.index"))

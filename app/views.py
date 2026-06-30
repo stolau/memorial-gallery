@@ -7,6 +7,7 @@ from werkzeug.utils import secure_filename
 
 from . import models
 from .auth import login_required
+from .storage import get_storage
 
 bp = Blueprint("views", __name__)
 
@@ -33,9 +34,10 @@ def person(slug: str):
     if not p:
         abort(404)
     photos = models.list_photos(p["id"])
+    storage = get_storage()
     photos_json = [
         {
-            "url": url_for("views.media", slug=slug, filename=ph["filename"]),
+            "url": storage.person_photo_url(slug, ph["filename"]),
             "caption": ph["caption"] or "",
         }
         for ph in photos
@@ -79,7 +81,7 @@ def edit(slug: str):
             profession=_str_or_none(request.form.get("profession")),
         )
 
-        media_root = Path(current_app.config["MEDIA_ROOT"])
+        storage = get_storage()
         profile_file = request.files.get("profile_image")
         remove_profile = request.form.get("remove_profile_image") == "on"
 
@@ -88,14 +90,13 @@ def edit(slug: str):
             if ext in ALLOWED_EXTENSIONS:
                 safe_base = secure_filename(Path(profile_file.filename).stem) or "profile"
                 final_name = f"{safe_base}-{secrets.token_hex(4)}{ext}"
-                dest_dir = media_root / slug / "profile"
-                dest_dir.mkdir(parents=True, exist_ok=True)
-                profile_file.save(dest_dir / final_name)
+                new_key = f"profile/{final_name}"
+                storage.save_person_photo(slug, new_key, profile_file)
                 if p["profile_image"]:
-                    (media_root / slug / p["profile_image"]).unlink(missing_ok=True)
-                update_kwargs["profile_image"] = f"profile/{final_name}"
+                    storage.delete_person_file(slug, p["profile_image"])
+                update_kwargs["profile_image"] = new_key
         elif remove_profile and p["profile_image"]:
-            (media_root / slug / p["profile_image"]).unlink(missing_ok=True)
+            storage.delete_person_file(slug, p["profile_image"])
             update_kwargs["profile_image"] = None
 
         models.update_person(slug, **update_kwargs)
@@ -105,8 +106,8 @@ def edit(slug: str):
     return render_template("edit_person.html", person=p)
 
 
-def _save_uploaded_photos(files, dest_dir: Path, caption: str | None, register) -> tuple[int, int]:
-    """Save valid image uploads to dest_dir; call register(filename) for each. Returns (saved, skipped)."""
+def _save_uploaded_photos(files, save_fn, caption: str | None, register) -> tuple[int, int]:
+    """Save valid image uploads via save_fn(filename, file_obj); call register(filename) for each."""
     saved = 0
     skipped = 0
     for f in files:
@@ -118,8 +119,7 @@ def _save_uploaded_photos(files, dest_dir: Path, caption: str | None, register) 
             continue
         safe_base = secure_filename(Path(f.filename).stem) or "photo"
         final_name = f"{safe_base}-{secrets.token_hex(4)}{ext}"
-        dest_dir.mkdir(parents=True, exist_ok=True)
-        f.save(dest_dir / final_name)
+        save_fn(final_name, f)
         register(final_name)
         saved += 1
     return saved, skipped
@@ -145,11 +145,11 @@ def upload(slug: str):
         abort(404)
 
     if request.method == "POST":
-        dest_dir = Path(current_app.config["MEDIA_ROOT"]) / slug
+        storage = get_storage()
         caption = request.form.get("caption") or None
         saved, skipped = _save_uploaded_photos(
             request.files.getlist("photos"),
-            dest_dir,
+            lambda name, fobj: storage.save_person_photo(slug, name, fobj),
             caption,
             lambda name: models.add_photo(p["id"], name, caption),
         )
@@ -161,6 +161,8 @@ def upload(slug: str):
 
 @bp.route("/media/<slug>/<path:filename>")
 def media(slug: str, filename: str):
+    if current_app.config["STORAGE_BACKEND"] == "s3":
+        return redirect(get_storage().person_photo_url(slug, filename), code=302)
     directory = Path(current_app.config["MEDIA_ROOT"]) / slug
     return send_from_directory(directory, filename)
 
@@ -174,9 +176,10 @@ def event(slug: str):
     if not e:
         abort(404)
     photos = models.list_event_photos(e["id"])
+    storage = get_storage()
     photos_json = [
         {
-            "url": url_for("views.event_media", slug=slug, filename=ph["filename"]),
+            "url": storage.event_photo_url(slug, ph["filename"]),
             "caption": ph["caption"] or "",
         }
         for ph in photos
@@ -214,11 +217,11 @@ def event_upload(slug: str):
         abort(404)
 
     if request.method == "POST":
-        dest_dir = Path(current_app.config["MEDIA_ROOT"]) / "events" / slug
+        storage = get_storage()
         caption = request.form.get("caption") or None
         saved, skipped = _save_uploaded_photos(
             request.files.getlist("photos"),
-            dest_dir,
+            lambda name, fobj: storage.save_event_photo(slug, name, fobj),
             caption,
             lambda name: models.add_event_photo(e["id"], name, caption),
         )
@@ -230,5 +233,7 @@ def event_upload(slug: str):
 
 @bp.route("/event-media/<slug>/<path:filename>")
 def event_media(slug: str, filename: str):
+    if current_app.config["STORAGE_BACKEND"] == "s3":
+        return redirect(get_storage().event_photo_url(slug, filename), code=302)
     directory = Path(current_app.config["MEDIA_ROOT"]) / "events" / slug
     return send_from_directory(directory, filename)
