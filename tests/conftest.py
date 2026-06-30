@@ -112,6 +112,14 @@ def client(app):
 
 
 @pytest.fixture
+def authed_client(app):
+    client = app.test_client()
+    with client.session_transaction() as sess:
+        sess["authed"] = True
+    return client
+
+
+@pytest.fixture
 def spa_app(tmp_path_factory):
     """Real seeded app whose SPA_DIST points at a fake built `dist/` we control.
 
