@@ -21,7 +21,7 @@ def login():
     if request.method == "POST":
         if request.form.get("password") == current_app.config["UPLOAD_PASSWORD"]:
             session["authed"] = True
-            return redirect(request.args.get("next") or url_for("views.index"))
+            return redirect(request.args.get("next") or "/")
         flash(gettext("Wrong password."))
     return render_template("login.html")
 
@@ -29,4 +29,4 @@ def login():
 @bp.route("/logout", methods=("POST",))
 def logout():
     session.pop("authed", None)
-    return redirect(url_for("views.index"))
+    return redirect("/")

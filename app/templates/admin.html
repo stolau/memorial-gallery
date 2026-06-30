@@ -48,7 +48,7 @@
                   <td class="text-center">{{ p.photo_count }}</td>
                   <td class="text-end">
                     <div class="btn-group btn-group-sm me-2">
-                      <a class="btn btn-outline-secondary" href="{{ url_for('views.person', slug=p.slug) }}">{{ _('Open') }}</a>
+                      <a class="btn btn-outline-secondary" href="/{{ p.slug }}">{{ _('Open') }}</a>
                       <a class="btn btn-outline-secondary" href="{{ url_for('admin.edit', slug=p.slug) }}">{{ _('Edit') }}</a>
                       <a class="btn btn-outline-secondary" href="{{ url_for('admin.upload', slug=p.slug) }}">{{ _('Photos') }}</a>
                     </div>
@@ -112,7 +112,7 @@
                   <td class="text-center">{{ e.photo_count }}</td>
                   <td class="text-end">
                     <div class="btn-group btn-group-sm me-2">
-                      <a class="btn btn-outline-secondary" href="{{ url_for('views.event', slug=e.slug) }}">{{ _('Open') }}</a>
+                      <a class="btn btn-outline-secondary" href="/events/{{ e.slug }}">{{ _('Open') }}</a>
                       <a class="btn btn-outline-secondary" href="{{ url_for('admin.event_edit', slug=e.slug) }}">{{ _('Edit') }}</a>
                       <a class="btn btn-outline-secondary" href="{{ url_for('admin.event_upload', slug=e.slug) }}">{{ _('Photos') }}</a>
                     </div>

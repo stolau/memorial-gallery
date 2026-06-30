@@ -49,7 +49,7 @@
 
     <div class="d-flex gap-2">
       <button type="submit" class="btn btn-primary">{{ _('Save') }}</button>
-      <a class="btn btn-outline-secondary" href="{{ url_for('views.person', slug=person.slug) }}">{{ _('Cancel') }}</a>
+      <a class="btn btn-outline-secondary" href="/{{ person.slug }}">{{ _('Cancel') }}</a>
     </div>
   </form>
 </div>

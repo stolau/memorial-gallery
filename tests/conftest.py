@@ -111,6 +111,30 @@ def client(app):
     return app.test_client()
 
 
+@pytest.fixture
+def spa_app(tmp_path_factory):
+    """Real seeded app whose SPA_DIST points at a fake built `dist/` we control.
+
+    Reuses ``_make_app`` so the DB is seeded (needed for `/api/people`), then
+    lays down a recognizable fake frontend build so the spa blueprint serves
+    real bytes off disk (nothing mocked).
+    """
+    app = _make_app(tmp_path_factory, storage_backend="local")
+    dist_dir = tmp_path_factory.mktemp("dist")
+    (dist_dir / "index.html").write_bytes(b'<!doctype html><div id="root">SPA-INDEX</div>')
+    (dist_dir / "assets").mkdir(parents=True, exist_ok=True)
+    (dist_dir / "assets" / "app.js").write_bytes(b'console.log("spa-asset");')
+    (dist_dir / "favicon.svg").write_bytes(b"<svg/>")
+    (dist_dir / "icons.svg").write_bytes(b"<svg/>")
+    app.config["SPA_DIST"] = str(dist_dir)
+    return app
+
+
+@pytest.fixture
+def spa_client(spa_app):
+    return spa_app.test_client()
+
+
 class _StubStorage:
     """Stand-in for S3Storage that returns a fixed CDN URL without any network.
 
