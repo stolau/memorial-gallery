@@ -160,6 +160,7 @@ def upload_person_photos(slug: str):
         lambda name, fobj: storage.save_person_photo(slug, name, fobj),
         caption,
         lambda name: models.add_photo(p["id"], name, caption),
+        max_px=current_app.config["IMAGE_MAX_PX"],
     )
     return jsonify(saved=saved, skipped=skipped), 200
 
@@ -177,6 +178,7 @@ def upload_event_photos(slug: str):
         lambda name, fobj: storage.save_event_photo(slug, name, fobj),
         caption,
         lambda name: models.add_event_photo(e["id"], name, caption),
+        max_px=current_app.config["IMAGE_MAX_PX"],
     )
     return jsonify(saved=saved, skipped=skipped), 200
 
@@ -190,7 +192,10 @@ def set_person_profile_image(slug: str):
     storage = get_storage()
     file = request.files.get("profile_image")
     remove = request.form.get("remove") == "true"
-    result = resolve_profile_image(storage, slug, p["profile_image"], file, remove)
+    result = resolve_profile_image(
+        storage, slug, p["profile_image"], file, remove,
+        max_px=current_app.config["IMAGE_MAX_PX"],
+    )
     if result is not UNCHANGED:
         models.update_person(slug, profile_image=result)
     return jsonify(attach_profile_url(models.get_person(slug))), 200
