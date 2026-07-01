@@ -35,24 +35,56 @@ function renderFacts(person: PersonDetailData) {
 }
 
 describe("PersonFacts", () => {
-  it("renders every present fact label and value", () => {
+  it("renders each present fact as an accessible-named icon plus its value", () => {
     renderFacts(fullPerson);
 
-    expect(screen.getByText("Syntynyt: 1920")).toBeTruthy();
-    expect(screen.getByText("Kuollut: 1998")).toBeTruthy();
-    expect(screen.getByText("Syntymäpaikka: Helsinki")).toBeTruthy();
-    expect(screen.getByText("Ammatti: Carpenter")).toBeTruthy();
+    // Each fact exposes an accessible-named SVG line icon with role="img" named
+    // by the Finnish label, and the value renders in its own <dd> (no combined
+    // "Label: value" text).
+    const born = screen.getByRole("img", { name: "Syntynyt" });
+    expect(born).toBeTruthy();
+    expect(born.querySelector("svg")).toBeTruthy();
+    expect(born.querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");
+    expect(screen.getByText("1920")).toBeTruthy();
+
+    const died = screen.getByLabelText("Kuollut");
+    expect(died).toBeTruthy();
+    expect(died.querySelector("svg")).toBeTruthy();
+    expect(died.querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");
+    expect(screen.getByText("1998")).toBeTruthy();
+
+    const birthplace = screen.getByLabelText("Syntymäpaikka");
+    expect(birthplace).toBeTruthy();
+    expect(birthplace.querySelector("svg")).toBeTruthy();
+    expect(birthplace.querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");
+    expect(screen.getByText("Helsinki")).toBeTruthy();
+
+    const profession = screen.getByLabelText("Ammatti");
+    expect(profession).toBeTruthy();
+    expect(profession.querySelector("svg")).toBeTruthy();
+    expect(profession.querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");
+    expect(screen.getByText("Carpenter")).toBeTruthy();
+
+    // Strong render guard: the full person renders exactly four SVG icons.
+    expect(document.querySelectorAll(".person-facts svg").length).toBe(4);
   });
 
-  it("omits the <li> for a null fact (null-guard)", () => {
+  it("renders a <dl> and no bulleted list", () => {
+    renderFacts(fullPerson);
+
+    expect(document.querySelector("dl.person-facts")).toBeTruthy();
+    expect(document.querySelectorAll("li").length).toBe(0);
+  });
+
+  it("omits a null fact entirely (null-guard)", () => {
     renderFacts({ ...fullPerson, profession: null });
 
     // The profession fact is gone entirely.
-    expect(screen.queryByText("Ammatti: Carpenter")).toBeNull();
-    expect(screen.queryByText(/^Ammatti:/)).toBeNull();
+    expect(screen.queryByLabelText("Ammatti")).toBeNull();
+    expect(screen.queryByText("Carpenter")).toBeNull();
 
     // The other facts are still present.
-    expect(screen.getByText("Syntynyt: 1920")).toBeTruthy();
-    expect(screen.getByText("Syntymäpaikka: Helsinki")).toBeTruthy();
+    expect(screen.getByLabelText("Syntynyt")).toBeTruthy();
+    expect(screen.getByLabelText("Syntymäpaikka")).toBeTruthy();
   });
 });

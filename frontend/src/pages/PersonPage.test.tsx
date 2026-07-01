@@ -110,7 +110,7 @@ describe("PersonPage", () => {
     expect(screen.queryByText("Caption that does not exist")).toBeNull();
   });
 
-  it("opens the portrait dialog when the Muotokuva button is clicked", async () => {
+  it("opens the portrait dialog when the Näytä tiedot button is clicked", async () => {
     mockedGetPerson.mockResolvedValue(detail);
 
     renderAt("kalevi");
@@ -120,12 +120,29 @@ describe("PersonPage", () => {
     // No dialog before interaction.
     expect(screen.queryByRole("dialog")).toBeNull();
 
-    fireEvent.click(screen.getByRole("button", { name: "Muotokuva" }));
+    fireEvent.click(screen.getByRole("button", { name: "Näytä tiedot" }));
 
     const dialog = screen.getByRole("dialog");
     expect(dialog).toBeTruthy();
-    // The dialog carries a fact from the fixture.
-    expect(within(dialog).getByText("Syntymäpaikka: Helsinki")).toBeTruthy();
+    // The bio (fixture: "Grandfather") now lives ONLY inside the dialog.
+    expect(within(dialog).getByText("Grandfather")).toBeTruthy();
+  });
+
+  it("keeps the bio, facts and profile image OUT of the page body until the dialog opens", async () => {
+    mockedGetPerson.mockResolvedValue(detail);
+
+    renderAt("kalevi");
+
+    await screen.findByRole("heading", { name: "Kalevi Koski" });
+
+    // Dialog not mounted yet.
+    expect(screen.queryByRole("dialog")).toBeNull();
+    // Bio is not rendered inline.
+    expect(screen.queryByText("Grandfather")).toBeNull();
+    // No inline facts icon/label.
+    expect(screen.queryByLabelText("Syntymäpaikka")).toBeNull();
+    // No inline profile image.
+    expect(document.querySelector("img.profile-img")).toBeNull();
   });
 
   it("auto-opens the portrait dialog when ?showinfo=1", async () => {

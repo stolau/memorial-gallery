@@ -223,9 +223,56 @@
   color: var(--text-h);
   border-radius: 8px;
   padding: 1.5rem;
-  max-width: 90vw;
-  max-height: 85vh;
+  width: 80%;
+  height: 80%;
+  max-width: 80vw;
+  max-height: 80vh;
   overflow: auto;
+  position: relative;
+  text-align: center;
+}
+
+.portrait-dialog .profile-img {
+  display: block;
+  margin-inline: auto;
+}
+
+.portrait-dialog > button {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+}
+
+.person-facts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  justify-content: center;
+}
+
+.person-fact {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+.person-fact dt,
+.person-fact dd {
+  margin: 0;
+}
+
+.person-fact dt {
+  display: inline-flex;
+  align-items: center;
+}
+
+.person-fact svg {
+  display: block;
 }
 
 @media (max-width: 576px) {

@@ -46,8 +46,26 @@ describe("PortraitDialog", () => {
 
     expect(within(dialog).getByText("Grandfather from the north.")).toBeTruthy();
 
-    // A reused fact label + value renders inside the dialog.
-    expect(within(dialog).getByText("Syntymäpaikka: Helsinki")).toBeTruthy();
+    // A reused fact renders inside the dialog as an accessible-named icon + value.
+    expect(within(dialog).getByLabelText("Syntymäpaikka")).toBeTruthy();
+    expect(within(dialog).getByText("Helsinki")).toBeTruthy();
+
+    // The dialog carries the sized inner element.
+    expect(dialog.querySelector(".portrait-dialog")).toBeTruthy();
+
+    // The facts row now renders BEFORE the bio paragraph in the DOM.
+    const facts = dialog.querySelector("dl.person-facts");
+    const bio = within(dialog).getByText("Grandfather from the north.");
+    expect(facts).toBeTruthy();
+    // facts.compareDocumentPosition(bio) has DOCUMENT_POSITION_FOLLOWING set
+    // exactly when `bio` follows `facts` in document order (facts is earlier).
+    expect(
+      facts!.compareDocumentPosition(bio) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    // And it must NOT be marked as preceding — guards against bio-before-facts.
+    expect(
+      facts!.compareDocumentPosition(bio) & Node.DOCUMENT_POSITION_PRECEDING,
+    ).toBeFalsy();
   });
 
   it("fires onClose from the close button", () => {

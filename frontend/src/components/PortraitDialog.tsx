@@ -37,8 +37,8 @@ function PortraitDialog({
           />
         )}
         <h2>{person.display_name}</h2>
-        {person.bio && <p>{person.bio}</p>}
         <PersonFacts person={person} />
+        {person.bio && <p>{person.bio}</p>}
         <button
           type="button"
           aria-label={t("lightbox.close")}
