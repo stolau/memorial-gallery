@@ -230,9 +230,11 @@ def live_server(_e2e_env, tmp_path_factory):
     thread.join()
 
 
-@pytest.fixture(scope="session")
-def base_url(live_server):
-    # Override pytest-playwright's base_url so relative goto works AND so fixture
-    # ordering (page -> context -> base_url -> live_server -> _e2e_env) guarantees
-    # the skip-guard runs before chromium launches.
-    return live_server
+# NOTE: the ``base_url`` override that points pytest-playwright at ``live_server``
+# is intentionally NOT defined here. ``pytest_base_url`` registers a session-scoped
+# ``autouse`` fixture (``_verify_url``) that requests ``base_url``; defining the
+# override globally in conftest would drag ``live_server`` -> ``_e2e_env`` (and its
+# dist/chromium skip-guard) into EVERY test, skipping the whole default suite when
+# ``frontend/dist`` is absent. Each e2e module defines its own module-local
+# ``base_url`` (returning ``live_server``) so the override — and the skip-guard —
+# apply ONLY to e2e-marked tests.

@@ -19,6 +19,14 @@ from playwright.sync_api import expect
 pytestmark = pytest.mark.e2e
 
 
+@pytest.fixture(scope="session")
+def base_url(live_server):
+    # Module-local override (NOT in conftest) so pytest_base_url's autouse
+    # ``_verify_url`` only pulls the live server + dist/chromium skip-guard for
+    # e2e tests, never the default suite. ``live_server`` is shared from conftest.
+    return live_server
+
+
 def test_person_page_loads_real_media_bytes(page):
     page.goto("/")
     page.get_by_role("link", name="Kalevi").click()

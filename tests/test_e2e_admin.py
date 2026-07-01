@@ -16,6 +16,14 @@ from tests.conftest import JPEG_BYTES
 pytestmark = pytest.mark.e2e
 
 
+@pytest.fixture(scope="session")
+def base_url(live_server):
+    # Module-local override (NOT in conftest) so pytest_base_url's autouse
+    # ``_verify_url`` only pulls the live server + dist/chromium skip-guard for
+    # e2e tests, never the default suite. ``live_server`` is shared from conftest.
+    return live_server
+
+
 def test_admin_create_upload_delete_flow(page):
     # Auto-accept the window.confirm() dialogs on photo/person delete.
     page.on("dialog", lambda d: d.accept())
