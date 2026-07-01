@@ -1,36 +1,21 @@
-import re
-import secrets
-import unicodedata
-from pathlib import Path
-
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 from flask_babel import gettext, ngettext
-from werkzeug.utils import secure_filename
 
 from . import models
+from .admin_logic import (
+    ALLOWED_EXTENSIONS,
+    UNCHANGED,
+    _int_or_none,
+    _save_uploaded_photos,
+    _slugify,
+    _str_or_none,
+    _unique_slug,
+    resolve_profile_image,
+)
 from .auth import login_required
 from .storage import get_storage
 
 bp = Blueprint("admin", __name__, url_prefix="/admin")
-
-ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
-
-
-def _slugify(value: str) -> str:
-    value = value.lower().strip()
-    for a, b in (("ä", "a"), ("ö", "o"), ("å", "a")):
-        value = value.replace(a, b)
-    value = unicodedata.normalize("NFKD", value).encode("ascii", "ignore").decode("ascii")
-    return re.sub(r"[^a-z0-9]+", "-", value).strip("-")
-
-
-def _unique_slug(base: str, exists) -> str:
-    slug = base
-    n = 2
-    while exists(slug):
-        slug = f"{base}-{n}"
-        n += 1
-    return slug
 
 
 @bp.route("/")
@@ -107,21 +92,6 @@ def delete_event(slug: str):
     return redirect(url_for("admin.index"))
 
 
-def _int_or_none(raw: str | None) -> int | None:
-    raw = (raw or "").strip()
-    if not raw:
-        return None
-    try:
-        return int(raw)
-    except ValueError:
-        return None
-
-
-def _str_or_none(raw: str | None) -> str | None:
-    raw = (raw or "").strip()
-    return raw or None
-
-
 @bp.route("/<slug>/edit", methods=("GET", "POST"))
 @login_required
 def edit(slug: str):
@@ -144,44 +114,17 @@ def edit(slug: str):
         profile_file = request.files.get("profile_image")
         remove_profile = request.form.get("remove_profile_image") == "on"
 
-        if profile_file and profile_file.filename:
-            ext = Path(profile_file.filename).suffix.lower()
-            if ext in ALLOWED_EXTENSIONS:
-                safe_base = secure_filename(Path(profile_file.filename).stem) or "profile"
-                final_name = f"{safe_base}-{secrets.token_hex(4)}{ext}"
-                new_key = f"profile/{final_name}"
-                storage.save_person_photo(slug, new_key, profile_file)
-                if p["profile_image"]:
-                    storage.delete_person_file(slug, p["profile_image"])
-                update_kwargs["profile_image"] = new_key
-        elif remove_profile and p["profile_image"]:
-            storage.delete_person_file(slug, p["profile_image"])
-            update_kwargs["profile_image"] = None
+        result = resolve_profile_image(
+            storage, slug, p["profile_image"], profile_file, remove_profile
+        )
+        if result is not UNCHANGED:
+            update_kwargs["profile_image"] = result
 
         models.update_person(slug, **update_kwargs)
         flash(gettext("Details updated."))
         return redirect("/" + slug)
 
     return render_template("edit_person.html", person=p)
-
-
-def _save_uploaded_photos(files, save_fn, caption: str | None, register) -> tuple[int, int]:
-    """Save valid image uploads via save_fn(filename, file_obj); call register(filename) for each."""
-    saved = 0
-    skipped = 0
-    for f in files:
-        if not f or not f.filename:
-            continue
-        ext = Path(f.filename).suffix.lower()
-        if ext not in ALLOWED_EXTENSIONS:
-            skipped += 1
-            continue
-        safe_base = secure_filename(Path(f.filename).stem) or "photo"
-        final_name = f"{safe_base}-{secrets.token_hex(4)}{ext}"
-        save_fn(final_name, f)
-        register(final_name)
-        saved += 1
-    return saved, skipped
 
 
 def _flash_upload_result(saved: int, skipped: int) -> None:

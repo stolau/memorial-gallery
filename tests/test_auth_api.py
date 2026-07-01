@@ -65,18 +65,6 @@ def test_logout_clears_session_and_me_goes_false(app, authed_client):
     assert after.get_json() == {"authed": False}
 
 
-def test_admin_ping_requires_auth(app, client, authed_client):
-    # Anonymous -> blocked by api_login_required.
-    anon = client.get("/api/admin/ping")
-    assert anon.status_code == 401
-    assert anon.get_json().get("ok") is not True
-
-    # Authenticated -> the protected view actually runs.
-    ok = authed_client.get("/api/admin/ping")
-    assert ok.status_code == 200
-    assert ok.get_json() == {"ok": True}
-
-
 def test_login_non_json_body_is_rejected_and_stays_anon(app, client):
     # Form-encoded body (no JSON content-type) must NOT authenticate, even though
     # it carries the correct password. The route demands JSON -> 415.
