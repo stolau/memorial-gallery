@@ -55,6 +55,7 @@ function AdminPhotoGrid({
   };
 
   const handleUpload = async () => {
+    if (files.length === 0) return;
     setError(null);
     try {
       await onUpload(slug, files, caption.trim() || undefined);

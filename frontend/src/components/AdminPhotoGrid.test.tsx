@@ -139,6 +139,23 @@ describe("AdminPhotoGrid", () => {
     await waitFor(() => expect(onChanged).toHaveBeenCalledTimes(1));
   });
 
+  it("does NOT upload or refetch when no file is chosen (empty-upload guard)", async () => {
+    // Twin of "uploads the chosen files with the slug then refetches"
+    // (~line 118): that test proves onUpload fires ONCE when a file is
+    // selected. Here no change event is fired, so files stays empty and the
+    // `if (files.length === 0) return;` guard must short-circuit before onUpload.
+    const { onUpload, onChanged } = renderGrid();
+
+    fireEvent.click(screen.getByRole("button", { name: "Lataa" }));
+
+    // handleUpload is async; flush pending microtasks so the negative
+    // assertions are meaningful rather than a false pass.
+    await waitFor(() => {});
+
+    expect(onUpload).not.toHaveBeenCalled();
+    expect(onChanged).not.toHaveBeenCalled();
+  });
+
   it("calls clearAuth exactly once when delete rejects with 401 (FIX 1)", async () => {
     vi.spyOn(window, "confirm").mockReturnValue(true);
     const err = { status: 401 } as AuthError;
