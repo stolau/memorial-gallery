@@ -242,8 +242,8 @@
   margin: 0;
   padding: 0;
   display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
 }
 
 .person-fact {
@@ -251,6 +251,7 @@
   align-items: center;
   gap: 0.5rem;
   margin: 0;
+  flex: 0 0 auto;
 }
 
 .person-fact dt,
