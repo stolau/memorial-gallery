@@ -55,6 +55,33 @@ def create_app() -> Flask:
         SESSION_COOKIE_SECURE=os.environ.get("SESSION_COOKIE_SECURE", os.environ.get("BEHIND_PROXY", "")).lower() in ("1", "true", "yes"),
     )
 
+    # --- Production secret guard --------------------------------------------
+    # Refuse to boot with dev-default secrets when a production signal is
+    # present. Production is signalled by BEHIND_PROXY (set in prod per
+    # DEPLOY.md step 4) or an explicit truthy SESSION_COOKIE_SECURE. Uses the
+    # same truthy parsing as SESSION_COOKIE_SECURE above. Deliberately narrow:
+    # when neither var is truthy (the local-dev / CI default, e.g. conftest's
+    # create_app()), the dev defaults remain allowed and this guard is a no-op.
+    _truthy = ("1", "true", "yes")
+    is_production = (
+        os.environ.get("BEHIND_PROXY", "").lower() in _truthy
+        or os.environ.get("SESSION_COOKIE_SECURE", "").lower() in _truthy
+    )
+    if is_production:
+        insecure = []
+        if app.config["SECRET_KEY"] in ("", "dev-only-change-me"):
+            insecure.append("SECRET_KEY")
+        if app.config["UPLOAD_PASSWORD"] in ("", "changeme"):
+            insecure.append("UPLOAD_PASSWORD")
+        if insecure:
+            raise RuntimeError(
+                "Refusing to start in production with dev-default secret(s): "
+                + ", ".join(insecure)
+                + ". Set a strong value for each in the environment / .env "
+                "(see DEPLOY.md step 4)."
+            )
+    # ------------------------------------------------------------------------
+
     Path(app.instance_path).mkdir(parents=True, exist_ok=True)
     Path(app.config["MEDIA_ROOT"]).mkdir(parents=True, exist_ok=True)
 
