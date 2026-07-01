@@ -25,6 +25,45 @@
   color: var(--accent);
 }
 
+.site-nav {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.lang-switch {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding-inline-start: 1rem;
+  border-inline-start: 1px solid var(--border);
+}
+
+.lang-switch button {
+  border: 0;
+  background: none;
+  padding: 2px;
+  line-height: 0;
+  cursor: pointer;
+  border-radius: 3px;
+  opacity: 0.4;
+  transition: opacity 0.15s ease;
+}
+
+.lang-switch button[aria-pressed="true"] {
+  opacity: 1;
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.lang-switch svg {
+  display: block;
+  width: 24px;
+  height: 16px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+}
+
 .page-main {
   padding: 1.5rem;
 }
