@@ -3,7 +3,6 @@ import { useParams, useSearchParams } from "react-router-dom";
 import { getPerson } from "../api/client";
 import type { PersonDetail } from "../api/types";
 import Layout from "../components/Layout";
-import PersonFacts from "../components/PersonFacts";
 import PhotoGrid from "../components/PhotoGrid";
 import PortraitDialog from "../components/PortraitDialog";
 import { useT } from "../i18n/LangContext";
@@ -38,15 +37,6 @@ function PersonPage() {
       {detail && (
         <>
           <h1>{detail.person.display_name}</h1>
-          {detail.person.profile_image_url && (
-            <img
-              className="profile-img"
-              src={detail.person.profile_image_url}
-              alt={detail.person.display_name}
-            />
-          )}
-          {detail.person.bio && <p>{detail.person.bio}</p>}
-          <PersonFacts person={detail.person} />
           <button type="button" onClick={() => setPortraitOpen(true)}>
             {t("person.portrait")}
           </button>

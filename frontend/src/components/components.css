@@ -223,9 +223,39 @@
   color: var(--text-h);
   border-radius: 8px;
   padding: 1.5rem;
-  max-width: 90vw;
-  max-height: 85vh;
+  width: 80%;
+  height: 80%;
+  max-width: 80vw;
+  max-height: 80vh;
   overflow: auto;
+  position: relative;
+}
+
+.portrait-dialog > button {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+}
+
+.person-facts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.person-fact {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.person-fact dt,
+.person-fact dd {
+  margin: 0;
 }
 
 @media (max-width: 576px) {

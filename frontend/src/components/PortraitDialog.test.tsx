@@ -46,8 +46,12 @@ describe("PortraitDialog", () => {
 
     expect(within(dialog).getByText("Grandfather from the north.")).toBeTruthy();
 
-    // A reused fact label + value renders inside the dialog.
-    expect(within(dialog).getByText("Syntymäpaikka: Helsinki")).toBeTruthy();
+    // A reused fact renders inside the dialog as an accessible-named icon + value.
+    expect(within(dialog).getByLabelText("Syntymäpaikka")).toBeTruthy();
+    expect(within(dialog).getByText("Helsinki")).toBeTruthy();
+
+    // The dialog carries the sized inner element.
+    expect(dialog.querySelector(".portrait-dialog")).toBeTruthy();
   });
 
   it("fires onClose from the close button", () => {
