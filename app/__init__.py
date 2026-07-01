@@ -3,7 +3,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 from flask import Flask, current_app, flash, jsonify, redirect, request, session
-from flask_babel import Babel, get_locale, gettext
+from flask_babel import Babel, gettext
 from werkzeug.exceptions import RequestEntityTooLarge
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -83,22 +83,6 @@ def create_app() -> Flask:
 
     babel.init_app(app, locale_selector=_select_locale)
 
-    @app.context_processor
-    def _inject_i18n():
-        loc = get_locale()
-        return {
-            "current_lang": str(loc) if loc else app.config["DEFAULT_LANG"],
-            "languages": app.config["LANGUAGES"],
-        }
-
-    @app.context_processor
-    def _inject_media_helpers():
-        storage = app.extensions["storage"]
-        return {
-            "person_photo_url": storage.person_photo_url,
-            "event_photo_url": storage.event_photo_url,
-        }
-
     @app.errorhandler(RequestEntityTooLarge)
     def too_large(_e):
         limit = app.config["MAX_UPLOAD_MB"]
@@ -112,11 +96,8 @@ def create_app() -> Flask:
 
     db.init_app(app)
 
-    from . import admin, admin_api, api, auth, media, spa, views
+    from . import admin_api, api, media, spa
 
-    app.register_blueprint(views.bp)
-    app.register_blueprint(auth.bp)
-    app.register_blueprint(admin.bp)
     app.register_blueprint(api.bp)
     app.register_blueprint(admin_api.bp)
     app.register_blueprint(media.bp)

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from app.admin import _int_or_none, _slugify, _str_or_none, _unique_slug
+from app.admin_logic import _int_or_none, _slugify, _str_or_none, _unique_slug
 
 
 # --- _slugify -------------------------------------------------------------
