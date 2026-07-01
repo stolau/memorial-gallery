@@ -258,6 +258,15 @@
   margin: 0;
 }
 
+.person-fact dt {
+  display: inline-flex;
+  align-items: center;
+}
+
+.person-fact svg {
+  display: block;
+}
+
 @media (max-width: 576px) {
   .people-grid {
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
