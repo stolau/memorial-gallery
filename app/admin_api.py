@@ -214,3 +214,23 @@ def delete_event_photo(slug: str, photo_id: int):
         return jsonify(error=gettext("Not found.")), 404
     get_storage().delete_event_file(slug, filename)
     return jsonify(deleted=True), 200
+
+
+@bp.route("/people/<slug>/photos/<int:photo_id>", methods=("PATCH",))
+@api_login_required
+def update_person_photo_caption(slug: str, photo_id: int):
+    data = request.get_json(silent=True) or {}
+    caption = _str_or_none(data.get("caption"))
+    if not models.update_photo_caption(photo_id, slug, caption):
+        return jsonify(error=gettext("Not found.")), 404
+    return jsonify(ok=True), 200
+
+
+@bp.route("/events/<slug>/photos/<int:photo_id>", methods=("PATCH",))
+@api_login_required
+def update_event_photo_caption(slug: str, photo_id: int):
+    data = request.get_json(silent=True) or {}
+    caption = _str_or_none(data.get("caption"))
+    if not models.update_event_photo_caption(photo_id, slug, caption):
+        return jsonify(error=gettext("Not found.")), 404
+    return jsonify(ok=True), 200

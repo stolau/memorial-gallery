@@ -13,6 +13,11 @@ interface AdminPhotoGridProps {
     files: File[],
     caption?: string,
   ) => Promise<UploadResult>;
+  onUpdateCaption: (
+    slug: string,
+    id: number,
+    caption: string | null,
+  ) => Promise<{ ok: boolean }>;
   onChanged: () => void;
 }
 
@@ -21,6 +26,7 @@ function AdminPhotoGrid({
   photos,
   onDeletePhoto,
   onUpload,
+  onUpdateCaption,
   onChanged,
 }: AdminPhotoGridProps) {
   const t = useT();
@@ -28,6 +34,8 @@ function AdminPhotoGrid({
   const [error, setError] = useState<string | null>(null);
   const [caption, setCaption] = useState("");
   const [files, setFiles] = useState<File[]>([]);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [draft, setDraft] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function handleMutationError(err: unknown) {
@@ -48,6 +56,17 @@ function AdminPhotoGrid({
     setError(null);
     try {
       await onDeletePhoto(slug, id);
+      onChanged();
+    } catch (err) {
+      handleMutationError(err);
+    }
+  };
+
+  const handleSaveCaption = async (id: number) => {
+    setError(null);
+    try {
+      await onUpdateCaption(slug, id, draft.trim() || null);
+      setEditingId(null);
       onChanged();
     } catch (err) {
       handleMutationError(err);
@@ -75,8 +94,38 @@ function AdminPhotoGrid({
       <div className="photo-grid">
         {photos.map((p) => (
           <figure key={p.id}>
-            <img src={p.url} alt={p.caption ?? ""} />
+            <img
+              src={p.url}
+              alt={p.caption ?? ""}
+              loading="lazy"
+              decoding="async"
+              width={640}
+              height={480}
+              style={{ aspectRatio: "4 / 3", width: "100%", height: "auto" }}
+            />
             {p.caption && <figcaption>{p.caption}</figcaption>}
+            {editingId === p.id ? (
+              <>
+                <input
+                  type="text"
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                />
+                <button type="button" onClick={() => handleSaveCaption(p.id)}>
+                  {t("admin.action.save")}
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingId(p.id);
+                  setDraft(p.caption ?? "");
+                }}
+              >
+                {t("admin.action.edit")}
+              </button>
+            )}
             <button type="button" onClick={() => handleDelete(p.id)}>
               {t("admin.action.delete")}
             </button>

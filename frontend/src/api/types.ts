@@ -71,3 +71,7 @@ export interface UploadResult {
   saved: number;
   skipped: number;
 }
+
+export interface CaptionUpdated {
+  ok: boolean;
+}

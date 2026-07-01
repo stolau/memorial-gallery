@@ -7,6 +7,7 @@ import type {
   EventCreate,
   EventUpdate,
   UploadResult,
+  CaptionUpdated,
 } from "./types";
 
 interface Deleted {
@@ -123,4 +124,28 @@ export function deletePersonPhoto(slug: string, id: number): Promise<Deleted> {
 
 export function deleteEventPhoto(slug: string, id: number): Promise<Deleted> {
   return sendDelete(`/api/events/${encodeURIComponent(slug)}/photos/${id}`);
+}
+
+export function updatePhotoCaption(
+  slug: string,
+  id: number,
+  caption: string | null,
+): Promise<CaptionUpdated> {
+  return sendJson(
+    "PATCH",
+    `/api/people/${encodeURIComponent(slug)}/photos/${id}`,
+    { caption },
+  );
+}
+
+export function updateEventPhotoCaption(
+  slug: string,
+  id: number,
+  caption: string | null,
+): Promise<CaptionUpdated> {
+  return sendJson(
+    "PATCH",
+    `/api/events/${encodeURIComponent(slug)}/photos/${id}`,
+    { caption },
+  );
 }
