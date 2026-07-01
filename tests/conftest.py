@@ -14,6 +14,9 @@ dir the media route reads via ``current_app.config["MEDIA_ROOT"]``.
 from __future__ import annotations
 
 import base64
+import threading
+import time
+import urllib.request
 from pathlib import Path
 
 import pytest
@@ -36,6 +39,9 @@ _JPEG_B64 = (
     "PxB//9k="
 )
 JPEG_BYTES = base64.b64decode(_JPEG_B64)
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+DIST = REPO_ROOT / "frontend" / "dist"
 
 
 def _seed(media_root: Path) -> None:
@@ -165,3 +171,70 @@ def s3_app(tmp_path_factory):
     app = _make_app(tmp_path_factory, storage_backend="s3")
     app.extensions["storage"] = _StubStorage()
     return app
+
+
+@pytest.fixture(scope="session")
+def _e2e_env():
+    """Skip the whole module unless the build + browser are actually present."""
+    from playwright.sync_api import sync_playwright
+
+    if not (DIST / "index.html").is_file():
+        pytest.skip(
+            "frontend/dist not built — run: cd frontend && npm ci && npm run build",
+            allow_module_level=False,
+        )
+    try:
+        with sync_playwright() as p:
+            exe = p.chromium.executable_path
+        if not exe or not Path(exe).exists():
+            pytest.skip(
+                "Chromium not installed — run: python -m playwright install chromium"
+            )
+    except Exception:
+        pytest.skip(
+            "Chromium not installed — run: python -m playwright install chromium"
+        )
+
+
+@pytest.fixture(scope="session")
+def live_server(_e2e_env, tmp_path_factory):
+    """Boot the real seeded app on a background werkzeug server, ready on HTTP 200."""
+    from werkzeug.serving import make_server
+
+    app = _make_app(tmp_path_factory, "local")
+    app.config["SPA_DIST"] = str(DIST)
+
+    server = make_server("127.0.0.1", 0, app, threaded=True)
+    port = server.server_port
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+
+    url = f"http://127.0.0.1:{port}/"
+    deadline = time.time() + 15
+    ready = False
+    while time.time() < deadline:
+        try:
+            resp = urllib.request.urlopen(url, timeout=1)
+            if resp.status == 200:
+                ready = True
+                break
+        except Exception:
+            pass
+        time.sleep(0.1)
+    if not ready:
+        pytest.fail("live server did not return 200 for / within timeout")
+
+    yield f"http://127.0.0.1:{port}"
+
+    server.shutdown()
+    thread.join()
+
+
+# NOTE: the ``base_url`` override that points pytest-playwright at ``live_server``
+# is intentionally NOT defined here. ``pytest_base_url`` registers a session-scoped
+# ``autouse`` fixture (``_verify_url``) that requests ``base_url``; defining the
+# override globally in conftest would drag ``live_server`` -> ``_e2e_env`` (and its
+# dist/chromium skip-guard) into EVERY test, skipping the whole default suite when
+# ``frontend/dist`` is absent. Each e2e module defines its own module-local
+# ``base_url`` (returning ``live_server``) so the override — and the skip-guard —
+# apply ONLY to e2e-marked tests.

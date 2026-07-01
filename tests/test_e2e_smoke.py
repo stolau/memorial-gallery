@@ -13,82 +13,17 @@ Requires chromium (``python -m playwright install chromium``) and a built
 
 from __future__ import annotations
 
-import threading
-import time
-import urllib.request
-from pathlib import Path
-
 import pytest
-from playwright.sync_api import expect, sync_playwright
-
-from tests.conftest import _make_app
-
-REPO_ROOT = Path(__file__).resolve().parent.parent
-DIST = REPO_ROOT / "frontend" / "dist"
+from playwright.sync_api import expect
 
 pytestmark = pytest.mark.e2e
 
 
 @pytest.fixture(scope="session")
-def _e2e_env():
-    """Skip the whole module unless the build + browser are actually present."""
-    if not (DIST / "index.html").is_file():
-        pytest.skip(
-            "frontend/dist not built — run: cd frontend && npm ci && npm run build",
-            allow_module_level=False,
-        )
-    try:
-        with sync_playwright() as p:
-            exe = p.chromium.executable_path
-        if not exe or not Path(exe).exists():
-            pytest.skip(
-                "Chromium not installed — run: python -m playwright install chromium"
-            )
-    except Exception:
-        pytest.skip(
-            "Chromium not installed — run: python -m playwright install chromium"
-        )
-
-
-@pytest.fixture(scope="session")
-def live_server(_e2e_env, tmp_path_factory):
-    """Boot the real seeded app on a background werkzeug server, ready on HTTP 200."""
-    from werkzeug.serving import make_server
-
-    app = _make_app(tmp_path_factory, "local")
-    app.config["SPA_DIST"] = str(DIST)
-
-    server = make_server("127.0.0.1", 0, app, threaded=True)
-    port = server.server_port
-    thread = threading.Thread(target=server.serve_forever, daemon=True)
-    thread.start()
-
-    url = f"http://127.0.0.1:{port}/"
-    deadline = time.time() + 15
-    ready = False
-    while time.time() < deadline:
-        try:
-            resp = urllib.request.urlopen(url, timeout=1)
-            if resp.status == 200:
-                ready = True
-                break
-        except Exception:
-            pass
-        time.sleep(0.1)
-    if not ready:
-        pytest.fail("live server did not return 200 for / within timeout")
-
-    yield f"http://127.0.0.1:{port}"
-
-    server.shutdown()
-    thread.join()
-
-
-@pytest.fixture(scope="session")
 def base_url(live_server):
-    # Override pytest-playwright's base_url so relative goto works AND so fixture
-    # ordering (page -> context -> base_url -> live_server -> _e2e_env) guarantees
-    # the skip-guard runs before chromium launches.
+    # Module-local override (NOT in conftest) so pytest_base_url's autouse
+    # ``_verify_url`` only pulls the live server + dist/chromium skip-guard for
+    # e2e tests, never the default suite. ``live_server`` is shared from conftest.
     return live_server
 
 
