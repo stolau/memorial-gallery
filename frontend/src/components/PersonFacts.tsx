@@ -27,15 +27,13 @@ function SunriseIcon() {
   );
 }
 
-// Sunset: same horizon line, but the sun arc dips below it (mirror of sunrise),
-// with a small downward tick to read as "setting".
-function SunsetIcon() {
+// Latin cross: a long vertical bar with a shorter horizontal crossbar set in
+// the upper third (well above center), reading as a Christian grave marker.
+function CrossIcon() {
   return (
     <svg {...svgProps}>
-      <line x1="3" y1="9" x2="21" y2="9" />
-      <path d="M7 9a5 5 0 0 0 10 0" />
-      <line x1="12" y1="19" x2="12" y2="16" />
-      <polyline points="9.5 17.5 12 20 14.5 17.5" />
+      <line x1="12" y1="3" x2="12" y2="21" />
+      <line x1="8" y1="8" x2="16" y2="8" />
     </svg>
   );
 }
@@ -63,7 +61,7 @@ function BriefcaseIcon() {
 
 const ICONS: Record<string, ReactNode> = {
   born: <SunriseIcon />,
-  died: <SunsetIcon />,
+  died: <CrossIcon />,
   birthplace: <PinIcon />,
   profession: <BriefcaseIcon />,
 };
