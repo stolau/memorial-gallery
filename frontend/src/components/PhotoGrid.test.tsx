@@ -74,4 +74,17 @@ describe("PhotoGrid", () => {
     expect(screen.queryByText("Caption that does not exist")).toBeNull();
     expect(srcs).not.toContain("/media/ghost.jpg");
   });
+
+  it("every img is lazy-loaded and async-decoded (perf attrs)", () => {
+    renderGrid(photos);
+
+    const imgs = Array.from(document.querySelectorAll("img"));
+    expect(imgs.length).toBe(photos.length);
+    for (const img of imgs) {
+      expect(img.getAttribute("loading")).toBe("lazy");
+      expect(img.getAttribute("decoding")).toBe("async");
+    }
+    // Falsifiability: none is eagerly loaded.
+    expect(imgs.some((i) => i.getAttribute("loading") === "eager")).toBe(false);
+  });
 });

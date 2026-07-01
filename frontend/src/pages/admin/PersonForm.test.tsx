@@ -27,6 +27,7 @@ vi.mock("../../api/admin", () => ({
   removePersonProfileImage: vi.fn(),
   deletePersonPhoto: vi.fn(),
   uploadPersonPhotos: vi.fn(),
+  updatePhotoCaption: vi.fn(),
 }));
 
 const { clearAuth } = vi.hoisted(() => ({ clearAuth: vi.fn() }));

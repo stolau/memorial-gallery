@@ -7,6 +7,7 @@ import {
   updateEvent,
   deleteEventPhoto,
   uploadEventPhotos,
+  updateEventPhotoCaption,
 } from "../../api/admin";
 import type { Photo, EventCreate, EventUpdate } from "../../api/types";
 import { useAuth } from "../../auth/AuthContext";
@@ -147,6 +148,7 @@ function EventForm() {
           photos={photos}
           onDeletePhoto={deleteEventPhoto}
           onUpload={uploadEventPhotos}
+          onUpdateCaption={updateEventPhotoCaption}
           onChanged={refetchPhotos}
         />
       )}

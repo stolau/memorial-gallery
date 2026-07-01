@@ -12,6 +12,8 @@ import {
   removePersonProfileImage,
   deletePersonPhoto,
   deleteEventPhoto,
+  updatePhotoCaption,
+  updateEventPhotoCaption,
 } from "./admin";
 import type { AuthError } from "./auth";
 
@@ -124,6 +126,34 @@ describe("admin api - JSON functions", () => {
     const { path, options } = lastCall(fetchMock);
     expect(path).toBe("/api/events/par%20ty/photos/9");
     expect(options).toMatchObject({ method: "DELETE", credentials: "include" });
+  });
+
+  it("updatePhotoCaption() PATCHes JSON to /api/people/<slug>/photos/<id> (slug encoded)", async () => {
+    const fetchMock = mockOk({ ok: true });
+    await updatePhotoCaption("some slug", 7, "hi");
+
+    const { path, options } = lastCall(fetchMock);
+    expect(path).toBe("/api/people/some%20slug/photos/7");
+    expect(options).toMatchObject({
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+    });
+    expect(options.body).toBe(JSON.stringify({ caption: "hi" }));
+  });
+
+  it("updateEventPhotoCaption() PATCHes JSON to /api/events/<slug>/photos/<id> (slug encoded)", async () => {
+    const fetchMock = mockOk({ ok: true });
+    await updateEventPhotoCaption("some slug", 7, "hi");
+
+    const { path, options } = lastCall(fetchMock);
+    expect(path).toBe("/api/events/some%20slug/photos/7");
+    expect(options).toMatchObject({
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+    });
+    expect(options.body).toBe(JSON.stringify({ caption: "hi" }));
   });
 });
 

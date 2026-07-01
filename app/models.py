@@ -99,6 +99,20 @@ def delete_photo(photo_id: int, slug: str) -> str | None:
     return row["filename"]
 
 
+def update_photo_caption(photo_id: int, slug: str, caption: str | None) -> bool:
+    db = get_db()
+    row = db.execute(
+        "SELECT ph.id FROM photos ph JOIN people p ON p.id = ph.person_id "
+        "WHERE ph.id = ? AND p.slug = ?",
+        (photo_id, slug),
+    ).fetchone()
+    if row is None:
+        return False
+    db.execute("UPDATE photos SET caption = ? WHERE id = ?", (caption, photo_id))
+    db.commit()
+    return True
+
+
 # --- Events ---------------------------------------------------------------
 
 EVENT_FIELDS = ("id", "slug", "name", "description", "event_time", "place")
@@ -194,3 +208,17 @@ def delete_event_photo(photo_id: int, slug: str) -> str | None:
     db.execute("DELETE FROM event_photos WHERE id = ?", (photo_id,))
     db.commit()
     return row["filename"]
+
+
+def update_event_photo_caption(photo_id: int, slug: str, caption: str | None) -> bool:
+    db = get_db()
+    row = db.execute(
+        "SELECT ep.id FROM event_photos ep JOIN events e ON e.id = ep.event_id "
+        "WHERE ep.id = ? AND e.slug = ?",
+        (photo_id, slug),
+    ).fetchone()
+    if row is None:
+        return False
+    db.execute("UPDATE event_photos SET caption = ? WHERE id = ?", (caption, photo_id))
+    db.commit()
+    return True

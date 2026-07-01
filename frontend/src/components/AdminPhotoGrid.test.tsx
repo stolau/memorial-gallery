@@ -12,6 +12,11 @@ type UploadFn = (
   files: File[],
   caption?: string,
 ) => Promise<UploadResult>;
+type UpdateCaptionFn = (
+  slug: string,
+  id: number,
+  caption: string | null,
+) => Promise<{ ok: boolean }>;
 
 // useAuth is mocked so we can observe clearAuth() on a 401. LangContext stays
 // real (wrapped in LangProvider) so the rendered text is the genuine fi copy.
@@ -45,6 +50,7 @@ const photos: Photo[] = [
 function renderGrid(props: {
   onDeletePhoto?: ReturnType<typeof vi.fn<DeleteFn>>;
   onUpload?: ReturnType<typeof vi.fn<UploadFn>>;
+  onUpdateCaption?: ReturnType<typeof vi.fn<UpdateCaptionFn>>;
   onChanged?: ReturnType<typeof vi.fn<() => void>>;
 } = {}) {
   const onDeletePhoto =
@@ -53,6 +59,9 @@ function renderGrid(props: {
   const onUpload =
     props.onUpload ??
     vi.fn<UploadFn>().mockResolvedValue({ saved: 1, skipped: 0 });
+  const onUpdateCaption =
+    props.onUpdateCaption ??
+    vi.fn<UpdateCaptionFn>().mockResolvedValue({ ok: true });
   const onChanged = props.onChanged ?? vi.fn<() => void>();
   render(
     <LangProvider>
@@ -61,16 +70,22 @@ function renderGrid(props: {
         photos={photos}
         onDeletePhoto={onDeletePhoto}
         onUpload={onUpload}
+        onUpdateCaption={onUpdateCaption}
         onChanged={onChanged}
       />
     </LangProvider>,
   );
-  return { onDeletePhoto, onUpload, onChanged };
+  return { onDeletePhoto, onUpload, onUpdateCaption, onChanged };
 }
 
 function deleteButtons(): HTMLButtonElement[] {
   return screen
     .getAllByRole("button", { name: "Poista" }) as HTMLButtonElement[];
+}
+
+function editButtons(): HTMLButtonElement[] {
+  return screen
+    .getAllByRole("button", { name: "Muokkaa" }) as HTMLButtonElement[];
 }
 
 afterEach(() => {
@@ -192,5 +207,62 @@ describe("AdminPhotoGrid", () => {
     const alert = await screen.findByRole("alert");
     expect(alert.textContent).toBe("Kohdetta ei löytynyt.");
     expect(clearAuth).not.toHaveBeenCalled();
+  });
+
+  it("every img is lazy-loaded and async-decoded (perf attrs)", () => {
+    renderGrid();
+
+    const imgs = Array.from(document.querySelectorAll("img"));
+    expect(imgs.length).toBe(photos.length);
+    for (const img of imgs) {
+      expect(img.getAttribute("loading")).toBe("lazy");
+      expect(img.getAttribute("decoding")).toBe("async");
+    }
+    expect(imgs.some((i) => i.getAttribute("loading") === "eager")).toBe(false);
+  });
+
+  it("Edit->Save updates the caption with EXACT (slug, id, text) then refetches", async () => {
+    const { onUpdateCaption, onChanged } = renderGrid();
+
+    // Open the editor for the first photo (fixture id 10).
+    fireEvent.click(editButtons()[0]);
+
+    // The edit input is the text box that now holds the current caption.
+    const input = screen.getByDisplayValue("At the lake") as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "By the shore" } });
+
+    fireEvent.click(screen.getByRole("button", { name: "Tallenna" }));
+
+    await waitFor(() => expect(onUpdateCaption).toHaveBeenCalledTimes(1));
+    expect(onUpdateCaption).toHaveBeenCalledWith("kalevi", 10, "By the shore");
+    await waitFor(() => expect(onChanged).toHaveBeenCalledTimes(1));
+  });
+
+  it("does NOT update or refetch when Edit is clicked but Save is not (falsifiability)", async () => {
+    const { onUpdateCaption, onChanged } = renderGrid();
+
+    fireEvent.click(editButtons()[0]);
+    const input = screen.getByDisplayValue("At the lake") as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "unsaved edit" } });
+
+    // No Save click. Flush pending microtasks so negatives are meaningful.
+    await waitFor(() => {});
+
+    expect(onUpdateCaption).not.toHaveBeenCalled();
+    expect(onChanged).not.toHaveBeenCalled();
+  });
+
+  it("calls clearAuth exactly once when caption save rejects with 401", async () => {
+    const err = { status: 401 } as AuthError;
+    const onUpdateCaption = vi.fn<UpdateCaptionFn>().mockRejectedValue(err);
+    const onChanged = vi.fn<() => void>();
+    renderGrid({ onUpdateCaption, onChanged });
+
+    fireEvent.click(editButtons()[0]);
+    fireEvent.click(screen.getByRole("button", { name: "Tallenna" }));
+
+    await waitFor(() => expect(clearAuth).toHaveBeenCalledTimes(1));
+    // A 401 is a session reset, not an in-page refetch.
+    expect(onChanged).not.toHaveBeenCalled();
   });
 });

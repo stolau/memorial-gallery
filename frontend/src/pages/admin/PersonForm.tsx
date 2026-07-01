@@ -9,6 +9,7 @@ import {
   removePersonProfileImage,
   deletePersonPhoto,
   uploadPersonPhotos,
+  updatePhotoCaption,
 } from "../../api/admin";
 import type { Photo, PersonCreate, PersonUpdate } from "../../api/types";
 import { useAuth } from "../../auth/AuthContext";
@@ -225,6 +226,7 @@ function PersonForm() {
           photos={photos}
           onDeletePhoto={deletePersonPhoto}
           onUpload={uploadPersonPhotos}
+          onUpdateCaption={updatePhotoCaption}
           onChanged={refetchPhotos}
         />
       )}
