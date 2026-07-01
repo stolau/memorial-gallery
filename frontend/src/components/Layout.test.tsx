@@ -31,8 +31,15 @@ describe("Layout", () => {
     // Events link in the default fi language.
     expect(screen.getByRole("link", { name: "Tapahtumat" })).toBeTruthy();
     // Both language switch buttons are present.
-    expect(screen.getByRole("button", { name: "FI" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "EN" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /suomi/i })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /english/i })).toBeTruthy();
+    // Each language button renders an inline svg flag.
+    expect(
+      screen.getByRole("button", { name: /suomi/i }).querySelector("svg"),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: /english/i }).querySelector("svg"),
+    ).toBeTruthy();
   });
 
   it("language switcher toggles active language", () => {
@@ -40,21 +47,21 @@ describe("Layout", () => {
 
     // Default state: fi active, en inactive, fi chrome text.
     expect(
-      screen.getByRole("button", { name: "FI" }).getAttribute("aria-pressed"),
+      screen.getByRole("button", { name: /suomi/i }).getAttribute("aria-pressed"),
     ).toBe("true");
     expect(
-      screen.getByRole("button", { name: "EN" }).getAttribute("aria-pressed"),
+      screen.getByRole("button", { name: /english/i }).getAttribute("aria-pressed"),
     ).toBe("false");
     expect(screen.getByRole("link", { name: "Tapahtumat" })).toBeTruthy();
 
-    fireEvent.click(screen.getByRole("button", { name: "EN" }));
+    fireEvent.click(screen.getByRole("button", { name: /english/i }));
 
     // After switching: en active, fi inactive, chrome text re-rendered to en.
     expect(
-      screen.getByRole("button", { name: "EN" }).getAttribute("aria-pressed"),
+      screen.getByRole("button", { name: /english/i }).getAttribute("aria-pressed"),
     ).toBe("true");
     expect(
-      screen.getByRole("button", { name: "FI" }).getAttribute("aria-pressed"),
+      screen.getByRole("button", { name: /suomi/i }).getAttribute("aria-pressed"),
     ).toBe("false");
     expect(screen.getByRole("link", { name: "Events" })).toBeTruthy();
   });

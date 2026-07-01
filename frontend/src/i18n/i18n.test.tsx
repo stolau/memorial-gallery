@@ -58,7 +58,7 @@ describe("i18n EventsIndex integration", () => {
     expect(await screen.findByText("Ei vielä tapahtumia.")).toBeTruthy();
 
     // Drive the REAL setLang through the REAL switcher button.
-    fireEvent.click(screen.getByRole("button", { name: "EN" }));
+    fireEvent.click(screen.getByRole("button", { name: /english/i }));
 
     // Unique en empty-state string is now present.
     expect(await screen.findByText("No events yet.")).toBeTruthy();
