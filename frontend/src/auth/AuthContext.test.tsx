@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { AuthProvider, useAuth } from "./AuthContext";
-import { getMe } from "../api/auth";
+import { getMe, logout } from "../api/auth";
 
 vi.mock("../api/auth", () => ({
   getMe: vi.fn(),
@@ -11,6 +11,7 @@ vi.mock("../api/auth", () => ({
 }));
 
 const mockedGetMe = vi.mocked(getMe);
+const mockedLogout = vi.mocked(logout);
 
 afterEach(() => {
   cleanup();
@@ -31,6 +32,22 @@ function renderProbe() {
     <AuthProvider>
       <StateProbe />
     </AuthProvider>,
+  );
+}
+
+// A consumer that also exposes a button to invoke clearAuth() so a test can
+// assert the local-only state reset (no network logout).
+function ClearAuthProbe() {
+  const { authed, clearAuth } = useAuth();
+  return (
+    <>
+      {authed === null && <p>state:loading</p>}
+      {authed === true && <p>state:authed</p>}
+      {authed === false && <p>state:anon</p>}
+      <button type="button" onClick={clearAuth}>
+        clear
+      </button>
+    </>
   );
 }
 
@@ -73,5 +90,24 @@ describe("AuthContext", () => {
 
     expect(await screen.findByText("state:anon")).toBeTruthy();
     expect(screen.queryByText("state:authed")).toBeNull();
+  });
+
+  it("clearAuth() flips authed session to anon WITHOUT calling network logout", async () => {
+    mockedGetMe.mockResolvedValue({ authed: true });
+
+    render(
+      <AuthProvider>
+        <ClearAuthProbe />
+      </AuthProvider>,
+    );
+
+    expect(await screen.findByText("state:authed")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "clear" }));
+
+    expect(await screen.findByText("state:anon")).toBeTruthy();
+    expect(screen.queryByText("state:authed")).toBeNull();
+    // clearAuth is a local reset only: the network logout must NOT fire.
+    expect(mockedLogout).not.toHaveBeenCalled();
   });
 });

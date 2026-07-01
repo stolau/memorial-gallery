@@ -22,6 +22,7 @@ function setAuth(authed: boolean | null) {
     authed,
     login: vi.fn(),
     logout: vi.fn(),
+    clearAuth: vi.fn(),
   });
 }
 
