@@ -9,9 +9,17 @@ import secrets
 import unicodedata
 from pathlib import Path
 
+from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 
+from .images import cap
+
 ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
+
+
+def _capped(f, max_px):
+    bio = cap(f, max_px=max_px)
+    return FileStorage(stream=bio, filename=f.filename, content_type=getattr(f, "mimetype", None))
 
 
 def _slugify(value: str) -> str:
@@ -46,7 +54,7 @@ def _str_or_none(raw: str | None) -> str | None:
     return raw or None
 
 
-def _save_uploaded_photos(files, save_fn, caption: str | None, register) -> tuple[int, int]:
+def _save_uploaded_photos(files, save_fn, caption: str | None, register, max_px=2000) -> tuple[int, int]:
     """Save valid image uploads via save_fn(filename, file_obj); call register(filename) for each."""
     saved = 0
     skipped = 0
@@ -59,7 +67,7 @@ def _save_uploaded_photos(files, save_fn, caption: str | None, register) -> tupl
             continue
         safe_base = secure_filename(Path(f.filename).stem) or "photo"
         final_name = f"{safe_base}-{secrets.token_hex(4)}{ext}"
-        save_fn(final_name, f)
+        save_fn(final_name, _capped(f, max_px))
         register(final_name)
         saved += 1
     return saved, skipped
@@ -68,7 +76,7 @@ def _save_uploaded_photos(files, save_fn, caption: str | None, register) -> tupl
 UNCHANGED = object()  # sentinel: "leave profile_image as-is"
 
 
-def resolve_profile_image(storage, slug, current_key, file, remove):
+def resolve_profile_image(storage, slug, current_key, file, remove, max_px=2000):
     """Resolve a profile-image change request.
 
     Returns the new key (str) to set, None to clear, or UNCHANGED to leave as-is.
@@ -85,7 +93,7 @@ def resolve_profile_image(storage, slug, current_key, file, remove):
             safe_base = secure_filename(Path(file.filename).stem) or "profile"
             final_name = f"{safe_base}-{secrets.token_hex(4)}{ext}"
             new_key = f"profile/{final_name}"
-            storage.save_person_photo(slug, new_key, file)
+            storage.save_person_photo(slug, new_key, _capped(file, max_px))
             if current_key:
                 storage.delete_person_file(slug, current_key)
             return new_key

@@ -40,6 +40,7 @@ def create_app() -> Flask:
         SPA_DIST=os.environ.get("SPA_DIST") or str(Path(app.root_path).parent / "frontend" / "dist"),
         MAX_UPLOAD_MB=max_upload_mb,
         MAX_CONTENT_LENGTH=max_upload_mb * 1024 * 1024,
+        IMAGE_MAX_PX=int(os.environ.get("IMAGE_MAX_PX", "2000")),
         LANGUAGES=LANGUAGES,
         DEFAULT_LANG=default_lang,
         BABEL_DEFAULT_LOCALE=default_lang,

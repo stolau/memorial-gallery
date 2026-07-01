@@ -105,8 +105,42 @@ def migrate_media_to_s3_command() -> None:
     click.echo(f"Uploaded {count} file(s) to bucket '{storage.bucket}'.")
 
 
+@click.command("backfill-images")
+@click.option("--max-px", type=int, default=None)
+def backfill_images_command(max_px) -> None:
+    """Cap oversized images already under MEDIA_ROOT (idempotent; skips GIFs)."""
+    from io import BytesIO
+    from pathlib import Path
+
+    from PIL import Image
+
+    from .images import cap
+
+    root = Path(current_app.config["MEDIA_ROOT"])
+    mp = max_px if max_px is not None else current_app.config["IMAGE_MAX_PX"]
+    processed = skipped = 0
+    for p in root.rglob("*"):
+        if not p.is_file() or p.suffix.lower() not in {".jpg", ".jpeg", ".png", ".webp"}:
+            skipped += 1
+            continue
+        try:
+            data = p.read_bytes()
+            with Image.open(BytesIO(data)) as im:
+                w, h = im.size
+        except Exception:
+            skipped += 1
+            continue
+        if max(w, h) <= mp:
+            skipped += 1
+            continue
+        p.write_bytes(cap(BytesIO(data), max_px=mp).getvalue())
+        processed += 1
+    click.echo(f"Backfill: processed {processed}, skipped {skipped}.")
+
+
 def init_app(app: Flask) -> None:
     app.teardown_appcontext(close_db)
     app.cli.add_command(init_db_command)
     app.cli.add_command(seed_kalevi_command)
     app.cli.add_command(migrate_media_to_s3_command)
+    app.cli.add_command(backfill_images_command)
