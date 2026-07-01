@@ -1,7 +1,7 @@
 """Proof that the SPA blueprint serves the built frontend and respects route
 precedence over the API / redirect rules.
 
-The spa blueprint is registered LAST, so concrete blueprints (api, auth, admin,
+The spa blueprint is registered LAST, so concrete blueprints (api, admin_api,
 media) must win over its `/<path:path>` catch-all, while unknown slugs fall
 through to the SPA index. Everything drives the REAL app via the `spa_client`
 fixture, which points `SPA_DIST` at a fake-but-real `dist/` directory on disk;

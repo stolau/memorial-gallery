@@ -1,18 +1,17 @@
-"""Proof that the `views` blueprint split is correct after the SPA migration.
+"""Proof that the Jinja admin/auth/views surface is retired and the SPA owns it.
 
-The four login-gated routes live on the `admin` blueprint (url_prefix="/admin"):
-    admin.edit          GET/POST /admin/<slug>/edit
-    admin.upload        GET/POST /admin/<slug>/upload
-    admin.event_edit    GET/POST /admin/event/<slug>/edit
-    admin.event_upload  GET/POST /admin/event/<slug>/upload
+After "Move E" the app registers only the api / admin_api / media / spa
+blueprints. The old Jinja management + auth + public view rules are gone:
+there is no `admin`, `auth`, or `views` blueprint left, so their endpoints can
+no longer be built. In single-origin mode the SPA blueprint's `/<path:path>`
+catch-all serves /login and /admin/* off the built `dist/index.html` instead of
+Jinja templates.
 
-The old public Jinja views were DELETED in favor of the SPA: views.index (/),
-views.person (/<slug>) and views.event (/event/<slug>) no longer exist; only
-views.set_language survives on the `views` blueprint. The legacy management
-endpoints views.edit/upload/event_edit/event_upload were also removed.
-
-Everything here drives the REAL app/client fixtures from conftest.py; nothing
-is mocked. The auth gate is exercised via the real session-based login_required.
+Everything here drives the REAL app via conftest fixtures. The `spa_client`
+fixture lays down a real `dist/index.html` on disk whose body contains the
+literal marker bytes ``SPA-INDEX``; asserting that marker proves the bytes came
+from the SPA catch-all (send_from_directory) and not from a Jinja render.
+Nothing is mocked.
 """
 
 from __future__ import annotations
@@ -21,70 +20,47 @@ import pytest
 from flask import url_for
 from werkzeug.routing import BuildError
 
-GATED_PATHS = [
+# Endpoints that belonged to the now-deleted Jinja blueprints. Each must be
+# unbuildable because the concrete URL rule no longer exists in the map.
+REMOVED_ENDPOINTS = [
+    ("admin.index", {}),
+    ("admin.edit", {"slug": "kalevi"}),
+    ("admin.upload", {"slug": "kalevi"}),
+    ("admin.event_edit", {"slug": "party"}),
+    ("admin.event_upload", {"slug": "party"}),
+    ("auth.login", {}),
+    ("auth.logout", {}),
+    ("views.set_language", {"lang": "en"}),
+]
+
+# Paths the SPA catch-all must now own (previously Jinja-rendered / gated).
+SPA_OWNED_PATHS = [
+    "/login",
+    "/admin",
+    "/admin/",
     "/admin/kalevi/edit",
-    "/admin/kalevi/upload",
     "/admin/event/party/edit",
-    "/admin/event/party/upload",
 ]
 
 
-def test_management_urls_build(app):
+def test_legacy_endpoints_unbuildable(app):
+    """None of the retired Jinja endpoints can be reverse-routed anymore."""
+    # A request context is an app context that also supplies a URL adapter, so
+    # a missing endpoint surfaces as a genuine BuildError (not a bare-context
+    # "SERVER_NAME not configured" RuntimeError).
     with app.test_request_context():
-        assert url_for("admin.edit", slug="kalevi") == "/admin/kalevi/edit"
-        assert url_for("admin.upload", slug="kalevi") == "/admin/kalevi/upload"
-        assert url_for("admin.event_edit", slug="party") == "/admin/event/party/edit"
-        assert url_for("admin.event_upload", slug="party") == "/admin/event/party/upload"
-
-
-def test_old_endpoints_removed(app):
-    removed = [
-        ("views.index", {}),
-        ("views.person", {"slug": "kalevi"}),
-        ("views.event", {"slug": "party"}),
-        ("views.edit", {"slug": "kalevi"}),
-        ("views.upload", {"slug": "kalevi"}),
-        ("views.event_edit", {"slug": "party"}),
-        ("views.event_upload", {"slug": "party"}),
-    ]
-    with app.test_request_context():
-        for endpoint, kwargs in removed:
+        for endpoint, kwargs in REMOVED_ENDPOINTS:
             with pytest.raises(BuildError):
                 url_for(endpoint, **kwargs)
 
 
-def test_gated_routes_redirect_when_anonymous(app):
-    client = app.test_client()  # fresh client, no authed session
-    for path in GATED_PATHS:
-        resp = client.get(path)
-        assert resp.status_code == 302, f"{path} expected 302, got {resp.status_code}"
-        assert "/login" in resp.headers["Location"], (
-            f"{path} redirect Location missing /login: {resp.headers['Location']}"
+def test_spa_owns_login_and_admin(spa_client):
+    """/login and /admin/* are served by the SPA catch-all, not Jinja."""
+    for path in SPA_OWNED_PATHS:
+        resp = spa_client.get(path)
+        assert resp.status_code == 200, (
+            f"{path} expected 200, got {resp.status_code}"
         )
-
-
-def test_gated_routes_ok_when_authed(client):
-    with client.session_transaction() as s:
-        s["authed"] = True
-    for path in GATED_PATHS:
-        resp = client.get(path)
-        assert resp.status_code == 200, f"{path} expected 200, got {resp.status_code}"
-
-
-def test_admin_auth_templates_render(client):
-    # All these templates extend base.html; a stale url_for to a deleted endpoint
-    # would raise BuildError and surface as a 500. A clean 200 is the acceptance
-    # gate proving every kept template still renders after the rewire.
-    with client.session_transaction() as s:
-        s["authed"] = True
-    paths = [
-        "/admin/",  # admin.index is route "/" under url_prefix "/admin"
-        "/login",
-        "/admin/kalevi/edit",
-        "/admin/kalevi/upload",
-        "/admin/event/party/edit",
-        "/admin/event/party/upload",
-    ]
-    for path in paths:
-        resp = client.get(path)
-        assert resp.status_code == 200, f"{path} expected 200, got {resp.status_code}"
+        assert b"SPA-INDEX" in resp.data, (
+            f"{path} did not serve the SPA index marker; body={resp.data!r}"
+        )
