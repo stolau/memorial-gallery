@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi, beforeEach } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import PersonPage from "./PersonPage";
 import { getPerson } from "../api/client";
@@ -44,6 +44,16 @@ const detail: PersonDetail = {
 function renderAt(slug: string) {
   return render(
     <MemoryRouter initialEntries={[`/${slug}`]}>
+      <Routes>
+        <Route path="/:slug" element={<PersonPage />} />
+      </Routes>
+    </MemoryRouter>,
+  );
+}
+
+function renderAtEntry(entry: string) {
+  return render(
+    <MemoryRouter initialEntries={[entry]}>
       <Routes>
         <Route path="/:slug" element={<PersonPage />} />
       </Routes>
@@ -98,6 +108,46 @@ describe("PersonPage", () => {
     const srcs = renderedImageSrcs();
     expect(srcs).not.toContain("/media/kalevi/ghost.jpg");
     expect(screen.queryByText("Caption that does not exist")).toBeNull();
+  });
+
+  it("opens the portrait dialog when the Muotokuva button is clicked", async () => {
+    mockedGetPerson.mockResolvedValue(detail);
+
+    renderAt("kalevi");
+
+    await screen.findByRole("heading", { name: "Kalevi Koski" });
+
+    // No dialog before interaction.
+    expect(screen.queryByRole("dialog")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Muotokuva" }));
+
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toBeTruthy();
+    // The dialog carries a fact from the fixture.
+    expect(within(dialog).getByText("Syntymäpaikka: Helsinki")).toBeTruthy();
+  });
+
+  it("auto-opens the portrait dialog when ?showinfo=1", async () => {
+    mockedGetPerson.mockResolvedValue(detail);
+
+    renderAtEntry("/kalevi?showinfo=1");
+
+    await screen.findByRole("heading", { name: "Kalevi Koski" });
+
+    // Dialog appears with no click.
+    expect(screen.getByRole("dialog")).toBeTruthy();
+  });
+
+  it("falsifiability twin B: does NOT auto-open the dialog without ?showinfo=1", async () => {
+    mockedGetPerson.mockResolvedValue(detail);
+
+    renderAtEntry("/kalevi");
+
+    await screen.findByRole("heading", { name: "Kalevi Koski" });
+
+    // Auto-open is gated on the query param, so no dialog here.
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 });
 

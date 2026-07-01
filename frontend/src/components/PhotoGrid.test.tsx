@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { LangProvider } from "../i18n/LangContext";
 import PhotoGrid from "./PhotoGrid";
 import type { Photo } from "../api/types";
@@ -86,5 +86,22 @@ describe("PhotoGrid", () => {
     }
     // Falsifiability: none is eagerly loaded.
     expect(imgs.some((i) => i.getAttribute("loading") === "eager")).toBe(false);
+  });
+
+  it("clicking a photo button opens the lightbox at that index", () => {
+    renderGrid(photos);
+
+    const buttons = document.querySelectorAll("button.photo-grid-btn");
+    expect(buttons).toHaveLength(2);
+
+    // Click the button wrapping the SECOND photo.
+    fireEvent.click(buttons[1]);
+
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toBeTruthy();
+    const counter = within(dialog)
+      .getByLabelText("Kuvan sijainti")
+      .textContent?.trim();
+    expect(counter).toBe("2 / 2");
   });
 });
