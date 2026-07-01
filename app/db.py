@@ -1,3 +1,4 @@
+import datetime
 import mimetypes
 import sqlite3
 from pathlib import Path
@@ -6,6 +7,13 @@ import click
 from flask import Flask, current_app, g
 
 from .storage import S3Storage
+
+
+def _convert_timestamp(val: bytes) -> datetime.datetime:
+    return datetime.datetime.fromisoformat(val.decode())
+
+
+sqlite3.register_converter("timestamp", _convert_timestamp)
 
 
 def get_db() -> sqlite3.Connection:
