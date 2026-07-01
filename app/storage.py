@@ -5,7 +5,7 @@ Selected at startup via STORAGE_BACKEND:
   - "s3":              files in an S3-compatible bucket (UpCloud Object Storage,
                        AWS S3, MinIO, ...).
 
-Both backends expose the same seven methods so views/admin/templates stay
+Both backends expose the same methods so views/admin/templates stay
 storage-agnostic.
 
 Key scheme (same in both backends, just rooted differently):
@@ -46,6 +46,9 @@ class LocalStorage:
 
     def delete_person_file(self, slug: str, filename: str) -> None:
         (self.root / slug / filename).unlink(missing_ok=True)
+
+    def delete_event_file(self, slug: str, filename: str) -> None:
+        (self.root / "events" / slug / filename).unlink(missing_ok=True)
 
     def delete_person_all(self, slug: str) -> None:
         shutil.rmtree(self.root / slug, ignore_errors=True)
@@ -117,6 +120,9 @@ class S3Storage:
 
     def delete_person_file(self, slug: str, filename: str) -> None:
         self.client.delete_object(Bucket=self.bucket, Key=f"{slug}/{filename}")
+
+    def delete_event_file(self, slug: str, filename: str) -> None:
+        self.client.delete_object(Bucket=self.bucket, Key=f"events/{slug}/{filename}")
 
     def delete_person_all(self, slug: str) -> None:
         self._delete_prefix(f"{slug}/")

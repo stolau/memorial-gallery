@@ -44,3 +44,30 @@ export interface EventDetail {
   event: EventDetailData;
   photos: Photo[];
 }
+
+export interface PersonCreate {
+  display_name: string;
+  slug?: string;
+  bio?: string | null;
+  birth_year?: number | null;
+  death_year?: number | null;
+  birthplace?: string | null;
+  profession?: string | null;
+}
+
+export type PersonUpdate = Partial<Omit<PersonCreate, "slug">>;
+
+export interface EventCreate {
+  name: string;
+  slug?: string;
+  description?: string | null;
+  event_time?: string | null;
+  place?: string | null;
+}
+
+export type EventUpdate = Partial<Omit<EventCreate, "slug">>;
+
+export interface UploadResult {
+  saved: number;
+  skipped: number;
+}
