@@ -219,6 +219,28 @@ describe("PersonForm - edit", () => {
     await waitFor(() => expect(mockedGetPerson).toHaveBeenCalledTimes(2));
   });
 
+  it("shows the generic alert when the initial getPerson load rejects", async () => {
+    // Plain Error with NO .status -> matches what client.ts actually throws on
+    // a read failure; PersonForm treats a status-less rejection as generic.
+    mockedGetPerson.mockRejectedValue(new Error("boom"));
+
+    renderEdit();
+
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toBe("Jotain meni pieleen.");
+  });
+
+  it("shows NO alert when the initial getPerson load resolves (falsifiability twin)", async () => {
+    mockedGetPerson.mockResolvedValue(detail);
+
+    renderEdit();
+
+    // Wait for the load to seed the form, then prove the alert is absent -
+    // confirming the alert above appears BECAUSE of the rejection.
+    await screen.findByDisplayValue("1920");
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
   it("calls clearAuth when updatePerson rejects with 401", async () => {
     mockedGetPerson.mockResolvedValue(detail);
     const err = { status: 401 } as AuthError;

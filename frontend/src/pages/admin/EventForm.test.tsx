@@ -177,6 +177,28 @@ describe("EventForm - edit", () => {
     );
   });
 
+  it("shows the generic alert when the initial getEvent load rejects", async () => {
+    // Plain Error with NO .status -> matches what client.ts actually throws on
+    // a read failure; EventForm treats a status-less rejection as generic.
+    mockedGetEvent.mockRejectedValue(new Error("boom"));
+
+    renderEdit();
+
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toBe("Jotain meni pieleen.");
+  });
+
+  it("shows NO alert when the initial getEvent load resolves (falsifiability twin)", async () => {
+    mockedGetEvent.mockResolvedValue(detail);
+
+    renderEdit();
+
+    // Wait for the load to seed the form, then prove the alert is absent -
+    // confirming the alert above appears BECAUSE of the rejection.
+    await screen.findByDisplayValue("Foo Event");
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
   it("calls clearAuth once when updateEvent rejects with 401", async () => {
     mockedGetEvent.mockResolvedValue(detail);
     const err = { status: 401 } as AuthError;
