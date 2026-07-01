@@ -4,14 +4,11 @@ import PersonPage from './pages/PersonPage'
 import EventsIndex from './pages/EventsIndex'
 import EventPage from './pages/EventPage'
 import Login from './pages/Login'
+import AdminDashboard from './pages/admin/AdminDashboard'
+import PersonForm from './pages/admin/PersonForm'
+import EventForm from './pages/admin/EventForm'
 import ProtectedRoute from './auth/ProtectedRoute'
-import { useAuth } from './auth/AuthContext'
 import './App.css'
-
-function AdminPlaceholder() {
-  const { authed } = useAuth()
-  return <div>Admin (coming soon) — authed: {String(authed)}</div>
-}
 
 function App() {
   return (
@@ -24,7 +21,39 @@ function App() {
         path="/admin"
         element={
           <ProtectedRoute>
-            <AdminPlaceholder />
+            <AdminDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/people/new"
+        element={
+          <ProtectedRoute>
+            <PersonForm />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/people/:slug/edit"
+        element={
+          <ProtectedRoute>
+            <PersonForm />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/events/new"
+        element={
+          <ProtectedRoute>
+            <EventForm />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/events/:slug/edit"
+        element={
+          <ProtectedRoute>
+            <EventForm />
           </ProtectedRoute>
         }
       />

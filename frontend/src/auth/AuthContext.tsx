@@ -11,10 +11,12 @@ const AuthContext = createContext<{
   authed: boolean | null;
   login: (pw: string) => Promise<void>;
   logout: () => Promise<void>;
+  clearAuth: () => void;
 }>({
   authed: null,
   login: async () => {},
   logout: async () => {},
+  clearAuth: () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -36,8 +38,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAuthed(false);
   };
 
+  const clearAuth = () => setAuthed(false);
+
   return (
-    <AuthContext.Provider value={{ authed, login, logout }}>
+    <AuthContext.Provider value={{ authed, login, logout, clearAuth }}>
       {children}
     </AuthContext.Provider>
   );
