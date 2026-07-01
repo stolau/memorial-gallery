@@ -135,8 +135,10 @@ describe("PersonPage", () => {
 
     await screen.findByRole("heading", { name: "Kalevi Koski" });
 
-    // Dialog appears with no click.
-    expect(screen.getByRole("dialog")).toBeTruthy();
+    // Dialog appears with no click. The auto-open runs in a useEffect that
+    // commits on a render after the heading, so await it rather than querying
+    // synchronously (a sync getByRole races the effect's render).
+    expect(await screen.findByRole("dialog")).toBeTruthy();
   });
 
   it("falsifiability twin B: does NOT auto-open the dialog without ?showinfo=1", async () => {
