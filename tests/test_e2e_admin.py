@@ -69,3 +69,62 @@ def test_admin_create_upload_delete_flow(page):
     person_item.get_by_role("button", name="Poista").click()
     expect(page.get_by_role("listitem").filter(has_text=name)).to_have_count(0)
     assert name not in page.request.get("/api/people").text()
+
+
+def _login_and_create_person(page):
+    """Log in and create a fresh uniquely-named person; return ``(name, slug)``.
+
+    Mirrors the login+create steps of test_admin_create_upload_delete_flow. The
+    slug is the server-side slugification of the name (app/admin_logic._slugify),
+    parsed off the ``/admin/people/<slug>/edit`` redirect URL and reused to hit
+    ``/api/people/<slug>``.
+    """
+    name = f"E2E Person {int(time.time() * 1000)}"
+    page.goto("/login?next=/admin")
+    page.get_by_label("Password").fill("changeme")
+    page.get_by_role("button", name="Log in").click()
+    page.wait_for_url("**/admin")
+
+    page.goto("/admin/people/new")
+    page.get_by_label("Nimi").fill(name)
+    page.get_by_role("button", name="Tallenna").click()
+    page.wait_for_url("**/admin/people/*/edit")
+    slug = page.url.rstrip("/").split("/")[-2]
+    return name, slug
+
+
+def _upload_photos(page, count):
+    """Upload ``count`` real JPEGs via the admin photo grid; wait until persisted."""
+    file_input = page.locator("input[type='file'][multiple]")
+    file_input.set_input_files(
+        files=[
+            {"name": f"e2e{i}.jpg", "mimeType": "image/jpeg", "buffer": JPEG_BYTES}
+            for i in range(count)
+        ]
+    )
+    page.get_by_role("button", name="Lataa").click()
+    expect(page.locator(".photo-grid figure")).to_have_count(count)
+
+
+def test_admin_edit_photo_caption(page):
+    _login_and_create_person(page)
+    _upload_photos(page, 1)
+
+    fig = page.locator(".photo-grid figure").first
+    fig.get_by_role("button", name="Muokkaa").click()
+    fig.get_by_role("textbox").fill("Uusi kuvateksti")
+    fig.get_by_role("button", name="Tallenna").click()
+    expect(page.locator(".photo-grid figcaption")).to_have_text("Uusi kuvateksti")
+
+
+def test_admin_delete_one_of_two_photos(page):
+    # Auto-accept the window.confirm() dialog on photo delete (set before clicks).
+    page.on("dialog", lambda d: d.accept())
+    _name, slug = _login_and_create_person(page)
+    _upload_photos(page, 2)
+
+    page.locator(".photo-grid figure").first.get_by_role(
+        "button", name="Poista"
+    ).click()
+    expect(page.locator(".photo-grid figure")).to_have_count(1)
+    assert len(page.request.get(f"/api/people/{slug}").json()["photos"]) == 1
