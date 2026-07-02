@@ -72,6 +72,20 @@ def _build_s3(monkeypatch, fake_client, public_base="https://cdn.example/", regi
     fake_boto3 = types.SimpleNamespace(client=_client)
     monkeypatch.setitem(sys.modules, "boto3", fake_boto3)
 
+    # storage.py also does `from botocore.config import Config`; botocore isn't
+    # installed either, so inject a fake package + submodule with a Config that
+    # records its kwargs (so tests can assert the addressing-style config).
+    class _FakeConfig:
+        def __init__(self, **kwargs):
+            self.kwargs = kwargs
+
+    fake_botocore = types.ModuleType("botocore")
+    fake_botocore_config = types.ModuleType("botocore.config")
+    fake_botocore_config.Config = _FakeConfig
+    fake_botocore.config = fake_botocore_config
+    monkeypatch.setitem(sys.modules, "botocore", fake_botocore)
+    monkeypatch.setitem(sys.modules, "botocore.config", fake_botocore_config)
+
     storage = S3Storage(
         endpoint="https://s3.example",
         bucket="mybucket",
@@ -117,6 +131,8 @@ def test_s3_client_kwargs(monkeypatch):
     assert captured["endpoint_url"] == "https://s3.example"
     assert captured["aws_access_key_id"] == "AK"
     assert captured["aws_secret_access_key"] == "SK"
+    # Path-style addressing is required by UpCloud / most S3-compatible providers.
+    assert captured["config"].kwargs == {"s3": {"addressing_style": "path"}}
 
 
 # --- _put content-type resolution ----------------------------------------
