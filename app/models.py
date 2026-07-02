@@ -12,7 +12,7 @@ def list_people() -> list[dict]:
 
 PERSON_FIELDS = (
     "id", "slug", "display_name", "bio",
-    "birth_year", "death_year", "birthplace", "profession",
+    "birth_date", "death_date", "birthplace", "profession",
     "profile_image",
 )
 EDITABLE_PERSON_FIELDS = frozenset(PERSON_FIELDS) - {"id", "slug"}

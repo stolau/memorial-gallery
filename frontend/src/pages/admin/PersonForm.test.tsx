@@ -61,8 +61,8 @@ const detail: PersonDetail = {
     bio: "Grandfather",
     profile_image: "profile/kalevi.jpg",
     profile_image_url: "/media/kalevi/profile/kalevi.jpg",
-    birth_year: 1920,
-    death_year: 1998,
+    birth_date: "19.4.1920",
+    death_date: "16.11.1998",
     birthplace: "Helsinki",
     profession: "Carpenter",
   },
@@ -113,7 +113,7 @@ afterEach(() => {
 });
 
 describe("PersonForm - create", () => {
-  it("sends empty optionals as null and parses the year (no slug key)", async () => {
+  it("sends empty optionals as null and the typed date as-is (no slug key)", async () => {
     mockedCreatePerson.mockResolvedValue({
       ...detail.person,
       slug: "new-person",
@@ -122,8 +122,8 @@ describe("PersonForm - create", () => {
     renderCreate();
 
     setInput("Nimi", "Uusi Henkilo");
-    // birth year left blank -> null; death year parses to a number.
-    setInput("Kuolinvuosi", "1998");
+    // birth date left blank -> null; death date sent verbatim.
+    setInput("Kuolinaika", "16.11.1998");
     submit();
 
     await waitFor(() => expect(mockedCreatePerson).toHaveBeenCalledTimes(1));
@@ -131,8 +131,8 @@ describe("PersonForm - create", () => {
     expect(payload).toEqual({
       display_name: "Uusi Henkilo",
       bio: null,
-      birth_year: null,
-      death_year: 1998,
+      birth_date: null,
+      death_date: "16.11.1998",
       birthplace: null,
       profession: null,
     });
@@ -162,19 +162,7 @@ describe("PersonForm - create", () => {
     expect(navigate).toHaveBeenCalledWith("/admin/people/new-person/edit");
   });
 
-  it("rejects a non-numeric year without calling createPerson (FIX 3)", async () => {
-    renderCreate();
-
-    setInput("Nimi", "Uusi Henkilo");
-    setInput("Syntymävuosi", "abc");
-    submit();
-
-    const alert = await screen.findByRole("alert");
-    expect(alert.textContent).toBe("Vuoden on oltava luku.");
-    expect(mockedCreatePerson).not.toHaveBeenCalled();
-  });
-
-  it("accepts a valid year and creates (falsifiability twin)", async () => {
+  it("sends the birth date verbatim, including non-numeric text", async () => {
     mockedCreatePerson.mockResolvedValue({
       ...detail.person,
       slug: "new-person",
@@ -183,11 +171,12 @@ describe("PersonForm - create", () => {
     renderCreate();
 
     setInput("Nimi", "Uusi Henkilo");
-    setInput("Syntymävuosi", "1920");
+    // Free-text: full dates, plain years, or approximate text all pass through.
+    setInput("Syntymäaika", "kesä 1920");
     submit();
 
     await waitFor(() => expect(mockedCreatePerson).toHaveBeenCalledTimes(1));
-    expect(mockedCreatePerson.mock.calls[0][0].birth_year).toBe(1920);
+    expect(mockedCreatePerson.mock.calls[0][0].birth_date).toBe("kesä 1920");
     expect(screen.queryByRole("alert")).toBeNull();
   });
 });
@@ -200,7 +189,7 @@ describe("PersonForm - edit", () => {
     renderEdit();
 
     // Seeded from the fixture.
-    expect(await screen.findByDisplayValue("1920")).toBeTruthy();
+    expect(await screen.findByDisplayValue("19.4.1920")).toBeTruthy();
     // AdminPhotoGrid is present in edit mode -> the fixture photo is visible.
     const srcs = Array.from(document.querySelectorAll("img")).map((i) =>
       i.getAttribute("src"),
@@ -238,7 +227,7 @@ describe("PersonForm - edit", () => {
 
     // Wait for the load to seed the form, then prove the alert is absent -
     // confirming the alert above appears BECAUSE of the rejection.
-    await screen.findByDisplayValue("1920");
+    await screen.findByDisplayValue("19.4.1920");
     expect(screen.queryByRole("alert")).toBeNull();
   });
 
@@ -248,7 +237,7 @@ describe("PersonForm - edit", () => {
     mockedUpdatePerson.mockRejectedValue(err);
 
     renderEdit();
-    await screen.findByDisplayValue("1920");
+    await screen.findByDisplayValue("19.4.1920");
 
     submit();
 
@@ -260,7 +249,7 @@ describe("PersonForm - edit", () => {
     mockedUpdatePerson.mockResolvedValue(detail.person);
 
     renderEdit();
-    await screen.findByDisplayValue("1920");
+    await screen.findByDisplayValue("19.4.1920");
 
     submit();
 
@@ -275,7 +264,7 @@ describe("PersonForm - edit", () => {
     mockedUpdatePerson.mockRejectedValue(err);
 
     renderEdit();
-    await screen.findByDisplayValue("1920");
+    await screen.findByDisplayValue("19.4.1920");
 
     submit();
 

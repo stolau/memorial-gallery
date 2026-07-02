@@ -16,8 +16,8 @@ export interface Person {
 }
 
 export interface PersonDetailData extends Person {
-  birth_year: number | null;
-  death_year: number | null;
+  birth_date: string | null;
+  death_date: string | null;
   birthplace: string | null;
   profession: string | null;
 }
@@ -49,8 +49,8 @@ export interface PersonCreate {
   display_name: string;
   slug?: string;
   bio?: string | null;
-  birth_year?: number | null;
-  death_year?: number | null;
+  birth_date?: string | null;
+  death_date?: string | null;
   birthplace?: string | null;
   profession?: string | null;
 }

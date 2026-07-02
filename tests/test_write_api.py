@@ -81,12 +81,12 @@ def test_update_person_applies_whitelist_ignores_non_editable(app, authed_client
 
     r = authed_client.put(
         "/api/people/kalevi",
-        json={"bio": "A carpenter.", "birth_year": 1921, "id": 999999, "slug": "hacked"},
+        json={"bio": "A carpenter.", "birth_date": "19.4.1921", "id": 999999, "slug": "hacked"},
     )
     assert r.status_code == 200
     body = r.get_json()
     assert body["bio"] == "A carpenter."
-    assert body["birth_year"] == 1921
+    assert body["birth_date"] == "19.4.1921"
     # Non-editable fields must be untouched.
     assert body["slug"] == "kalevi"
     assert body["id"] == original_id

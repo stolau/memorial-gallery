@@ -4,7 +4,6 @@ from flask_babel import gettext
 from . import models
 from .admin_logic import (
     UNCHANGED,
-    _int_or_none,
     _save_uploaded_photos,
     _slugify,
     _str_or_none,
@@ -45,12 +44,11 @@ def me():
 
 def _person_fields(data: dict) -> dict:
     fields: dict = {}
-    for key in ("display_name", "bio", "birthplace", "profession"):
+    for key in (
+        "display_name", "bio", "birth_date", "death_date", "birthplace", "profession",
+    ):
         if key in data:
             fields[key] = _str_or_none(data.get(key))
-    for key in ("birth_year", "death_year"):
-        if key in data:
-            fields[key] = _int_or_none(str(data[key]))
     return fields
 
 
