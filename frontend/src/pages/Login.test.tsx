@@ -31,7 +31,7 @@ function renderLogin() {
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/" element={<div>HOME PAGE</div>} />
+          <Route path="/admin" element={<div>ADMIN DASHBOARD</div>} />
         </Routes>
       </AuthProvider>
     </MemoryRouter>,
@@ -56,7 +56,7 @@ describe("Login", () => {
     submit();
 
     // Navigation is observed via the destination route's content appearing.
-    expect(await screen.findByText("HOME PAGE")).toBeTruthy();
+    expect(await screen.findByText("ADMIN DASHBOARD")).toBeTruthy();
     expect(mockedLogin).toHaveBeenCalledTimes(1);
     expect(mockedLogin).toHaveBeenCalledWith("s3cret");
     // The login form is gone -> we genuinely left /login.
@@ -75,7 +75,7 @@ describe("Login", () => {
     const alert = await screen.findByRole("alert");
     expect(alert.textContent).toBe("Wrong password.");
     // FALSIFIABILITY: a rejected login must not navigate away.
-    expect(screen.queryByText("HOME PAGE")).toBeNull();
+    expect(screen.queryByText("ADMIN DASHBOARD")).toBeNull();
     expect(screen.getByRole("button", { name: "Log in" })).toBeTruthy();
     expect(mockedLogin).toHaveBeenCalledWith("wrong-pw");
   });

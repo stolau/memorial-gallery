@@ -15,7 +15,7 @@ function Login() {
     setError(null);
     try {
       await login(password);
-      navigate(searchParams.get("next") || "/");
+      navigate(searchParams.get("next") || "/admin");
     } catch (err) {
       if ((err as AuthError).status === 401) {
         setError("Wrong password.");
