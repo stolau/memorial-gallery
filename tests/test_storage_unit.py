@@ -131,8 +131,13 @@ def test_s3_client_kwargs(monkeypatch):
     assert captured["endpoint_url"] == "https://s3.example"
     assert captured["aws_access_key_id"] == "AK"
     assert captured["aws_secret_access_key"] == "SK"
-    # Path-style addressing is required by UpCloud / most S3-compatible providers.
-    assert captured["config"].kwargs == {"s3": {"addressing_style": "path"}}
+    # Path-style addressing + checksum opt-out are required by UpCloud / most
+    # S3-compatible providers.
+    assert captured["config"].kwargs == {
+        "s3": {"addressing_style": "path"},
+        "request_checksum_calculation": "when_required",
+        "response_checksum_validation": "when_required",
+    }
 
 
 # --- _put content-type resolution ----------------------------------------

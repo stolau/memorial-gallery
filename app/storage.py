@@ -86,11 +86,19 @@ class S3Storage:
             aws_access_key_id=access_key,
             aws_secret_access_key=secret_key,
             region_name=region or "us-east-1",
-            # UpCloud (and most S3-compatible providers) serve buckets in the URL
-            # path, not as a host subdomain. Without this, boto3 signs requests
-            # for <bucket>.<endpoint> and the server rejects them with
-            # SignatureDoesNotMatch.
-            config=Config(s3={"addressing_style": "path"}),
+            config=Config(
+                # UpCloud (and most S3-compatible providers) serve buckets in
+                # the URL path, not as a host subdomain. Without this, boto3
+                # signs requests for <bucket>.<endpoint> and the server rejects
+                # them with SignatureDoesNotMatch.
+                s3={"addressing_style": "path"},
+                # botocore >= 1.36 adds default data-integrity checksums via
+                # aws-chunked encoding, which UpCloud rejects with
+                # XAmzContentSHA256Mismatch. Only send checksums when the
+                # operation actually requires them (pre-1.36 behaviour).
+                request_checksum_calculation="when_required",
+                response_checksum_validation="when_required",
+            ),
         )
 
     def _put(self, key: str, file_obj: Any) -> None:
