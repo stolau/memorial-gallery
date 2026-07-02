@@ -132,7 +132,7 @@ function AdminPhotoGrid({
           </figure>
         ))}
       </div>
-      <div>
+      <div className="photo-upload">
         <input
           ref={fileInputRef}
           type="file"

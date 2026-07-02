@@ -107,7 +107,7 @@ function EventForm() {
 
   return (
     <AdminLayout>
-      <form onSubmit={handleSubmit}>
+      <form className="admin-form" onSubmit={handleSubmit}>
         <label>
           {t("admin.field.name")}
           <input
