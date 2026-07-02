@@ -1,27 +1,24 @@
-# Kaijankoski — Memorial Gallery
+# Photo Gallery
 
-A small Flask web app for hosting a family memorial photo gallery. Each person gets
-their own page (`/<name>`) with a photo gallery and a details card (bio, birth/death
-years, birthplace, profession, optional portrait). Built to grow from one person to
-a whole family.
-
-The UI is in Finnish.
+A small Flask web app for hosting a photo gallery. Each person gets their own page
+(`/<name>`) with a photo gallery and a details card (bio, birth/death years, birthplace,
+profession, optional portrait). Built to grow from one person to many.
 
 ## Features
 
-- **Per-person pages** at `/<slug>` (e.g. `/kalevi`) with an interactive gallery:
+- **Per-person pages** at `/<slug>` (e.g. `/jane`) with an interactive gallery:
   a large featured photo, previous/next navigation, and a clickable thumbnail strip.
 - **Details card** — a pop-up modal showing the person's portrait, bio, and facts.
-  Opens on demand via the *Tiedot* button, or automatically when the page is visited
+  Opens on demand via the details button, or automatically when the page is visited
   with `?showinfo=true`.
 - **Event pages** at `/event/<slug>` — a parallel entity for events (weddings, reunions,
   …) with the same interactive gallery. Details (name, description, time, place) are shown
-  inline rather than in a popup. Events are listed in a "Tapahtumat" section on the main
+  inline rather than in a popup. Events are listed in an events section on the main
   page, each card covered by the event's latest photo.
 - **Admin panel** in the SPA (login required) — add, edit, and delete both people and
   events from one place, driven by the JSON write API. New entries get a URL slug
-  auto-generated from their name (Finnish characters transliterated, e.g.
-  `Väinö Öström` → `vaino-ostrom`), with automatic de-duplication.
+  auto-generated from their name (accented characters transliterated, e.g.
+  `Renée Ström` → `renee-strom`), with automatic de-duplication.
 - **Password-protected editing** — the admin views, adding photos, and editing details
   all go through JSON endpoints guarded by a single shared password. Edit/upload controls
   are hidden from logged-out visitors.
@@ -51,9 +48,9 @@ cp .env.example .env
 #    then edit .env — set a real SECRET_KEY and UPLOAD_PASSWORD
 python -c "import secrets; print(secrets.token_hex(32))"   # generates a SECRET_KEY
 
-# 3. Initialize the database and seed the first person
+# 3. Initialize the database (and optionally seed a sample person)
 flask --app app init-db
-flask --app app seed-kalevi
+flask --app app seed-kalevi   # optional starter person
 ```
 
 ## Running
@@ -80,7 +77,7 @@ Environment variables (loaded from `.env`):
 
 ```bash
 flask --app app init-db              # create tables; also applies column migrations
-flask --app app seed-kalevi          # insert the initial "kalevi" person if missing
+flask --app app seed-kalevi          # insert an initial sample person if missing
 flask --app app migrate-media-to-s3  # one-shot upload of media/ to the configured S3 bucket
 ```
 
@@ -148,7 +145,7 @@ editing the `.po` — otherwise new strings fall back to their English keys.
 ## Storage backends
 
 Photos can live either on the local filesystem (default) or in an S3-compatible
-object storage bucket (e.g. UpCloud Object Storage, AWS S3, MinIO). Switching is a
+object storage bucket (e.g. AWS S3, MinIO, or any S3-compatible provider). Switching is a
 one-line `.env` change followed by a one-shot migration.
 
 **`STORAGE_BACKEND=local`** (default) — files saved under `media/<slug>/...` and
@@ -160,17 +157,16 @@ pass through the VM. Set all of:
 
 ```
 STORAGE_BACKEND=s3
-S3_ENDPOINT=https://hel1.upcloudobjects.com
-S3_BUCKET=kaijankoski-media
+S3_ENDPOINT=https://s3.example.com
+S3_BUCKET=my-media-bucket
 S3_ACCESS_KEY=...
 S3_SECRET_KEY=...
-S3_PUBLIC_BASE=https://kaijankoski-media.hel1.upcloudobjects.com
+S3_PUBLIC_BASE=https://my-media-bucket.s3.example.com
 # S3_REGION=    # optional; defaults to us-east-1 which most providers ignore
 ```
 
 The bucket is assumed to be publicly readable (so `S3_PUBLIC_BASE/<key>` resolves
-directly in a browser). For UpCloud Object Storage, attach a bucket policy that
-allows `s3:GetObject` for `*`.
+directly in a browser). Attach a bucket policy that allows `s3:GetObject` for `*`.
 
 If `STORAGE_BACKEND=s3` is set without all of those vars, the app refuses to
 start and tells you which ones are missing.
@@ -194,3 +190,5 @@ single source of truth; the local `media/` directory can be deleted.
 - Supported image formats: JPG, PNG, GIF, WEBP.
 - The Flask dev server is for local use only; run behind a production WSGI server
   (e.g. gunicorn) for any real deployment.
+</content>
+</invoke>
