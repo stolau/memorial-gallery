@@ -69,45 +69,53 @@ function AdminDashboard() {
       {people && events && (
         <>
           {error && <p role="alert">{error}</p>}
-          <section>
+          <section className="admin-section">
             <h2>{t("admin.people.title")}</h2>
-            <ul>
+            <ul className="admin-list">
               {people.map((person) => (
                 <li key={person.slug}>
                   <span>{person.display_name}</span>
-                  <Link to={`/admin/people/${person.slug}/edit`}>
-                    {t("admin.action.edit")}
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => handleDeletePerson(person.slug)}
-                  >
-                    {t("admin.action.delete")}
-                  </button>
+                  <span className="admin-row-actions">
+                    <Link to={`/admin/people/${person.slug}/edit`}>
+                      {t("admin.action.edit")}
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => handleDeletePerson(person.slug)}
+                    >
+                      {t("admin.action.delete")}
+                    </button>
+                  </span>
                 </li>
               ))}
             </ul>
-            <Link to="/admin/people/new">{t("admin.action.new")}</Link>
+            <Link className="admin-new" to="/admin/people/new">
+              {t("admin.action.new")}
+            </Link>
           </section>
-          <section>
+          <section className="admin-section">
             <h2>{t("admin.events.title")}</h2>
-            <ul>
+            <ul className="admin-list">
               {events.map((event) => (
                 <li key={event.slug}>
                   <span>{event.name}</span>
-                  <Link to={`/admin/events/${event.slug}/edit`}>
-                    {t("admin.action.edit")}
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteEvent(event.slug)}
-                  >
-                    {t("admin.action.delete")}
-                  </button>
+                  <span className="admin-row-actions">
+                    <Link to={`/admin/events/${event.slug}/edit`}>
+                      {t("admin.action.edit")}
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteEvent(event.slug)}
+                    >
+                      {t("admin.action.delete")}
+                    </button>
+                  </span>
                 </li>
               ))}
             </ul>
-            <Link to="/admin/events/new">{t("admin.action.new")}</Link>
+            <Link className="admin-new" to="/admin/events/new">
+              {t("admin.action.new")}
+            </Link>
           </section>
         </>
       )}

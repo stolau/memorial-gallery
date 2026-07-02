@@ -146,7 +146,7 @@ function PersonForm() {
 
   return (
     <AdminLayout>
-      <form onSubmit={handleSubmit}>
+      <form className="admin-form" onSubmit={handleSubmit}>
         <label>
           {t("admin.field.displayName")}
           <input
@@ -208,7 +208,7 @@ function PersonForm() {
           />
         </label>
         {isEdit && (
-          <label>
+          <label className="admin-check">
             {t("admin.field.removeImage")}
             <input
               type="checkbox"
