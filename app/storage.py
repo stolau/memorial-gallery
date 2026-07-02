@@ -76,6 +76,7 @@ class S3Storage:
         region: str | None = None,
     ) -> None:
         import boto3  # lazy so local-mode installs don't need the dep at import time
+        from botocore.config import Config
 
         self.bucket = bucket
         self.public_base = public_base.rstrip("/")
@@ -85,6 +86,11 @@ class S3Storage:
             aws_access_key_id=access_key,
             aws_secret_access_key=secret_key,
             region_name=region or "us-east-1",
+            # UpCloud (and most S3-compatible providers) serve buckets in the URL
+            # path, not as a host subdomain. Without this, boto3 signs requests
+            # for <bucket>.<endpoint> and the server rejects them with
+            # SignatureDoesNotMatch.
+            config=Config(s3={"addressing_style": "path"}),
         )
 
     def _put(self, key: str, file_obj: Any) -> None:
