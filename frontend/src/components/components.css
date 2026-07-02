@@ -486,6 +486,17 @@
 }
 
 @media (max-width: 576px) {
+  .site-header {
+    padding: 0.75rem 1rem;
+    gap: 0.5rem 0.75rem;
+    flex-wrap: wrap;
+  }
+  .site-nav {
+    gap: 0.75rem;
+  }
+  .lang-switch {
+    padding-inline-start: 0.75rem;
+  }
   .people-grid {
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   }
