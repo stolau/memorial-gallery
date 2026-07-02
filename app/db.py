@@ -34,12 +34,16 @@ def close_db(_e=None) -> None:
 
 
 PEOPLE_COLUMNS: dict[str, str] = {
-    "birth_year": "INTEGER",
-    "death_year": "INTEGER",
+    "birth_date": "TEXT",
+    "death_date": "TEXT",
     "birthplace": "TEXT",
     "profession": "TEXT",
     "profile_image": "TEXT",
 }
+
+# Legacy INTEGER year columns superseded by the free-text date columns above.
+# Their values are carried over once when upgrading an older database.
+_LEGACY_DATE_COLUMNS = (("birth_year", "birth_date"), ("death_year", "death_date"))
 
 
 def _migrate_people_columns(db: sqlite3.Connection) -> None:
@@ -47,6 +51,15 @@ def _migrate_people_columns(db: sqlite3.Connection) -> None:
     for col, ddl in PEOPLE_COLUMNS.items():
         if col not in existing:
             db.execute(f"ALTER TABLE people ADD COLUMN {col} {ddl}")
+
+    # Copy any legacy year values into the new date columns (as text), once.
+    refreshed = {row["name"] for row in db.execute("PRAGMA table_info(people)").fetchall()}
+    for old, new in _LEGACY_DATE_COLUMNS:
+        if old in refreshed and new in refreshed:
+            db.execute(
+                f"UPDATE people SET {new} = CAST({old} AS TEXT) "
+                f"WHERE {new} IS NULL AND {old} IS NOT NULL"
+            )
 
 
 def init_db() -> None:

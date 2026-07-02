@@ -20,8 +20,8 @@ const person: PersonDetailData = {
   bio: "Grandfather from the north.",
   profile_image: "profile/kalevi.jpg",
   profile_image_url: "/media/kalevi/profile/kalevi.jpg",
-  birth_year: 1920,
-  death_year: 1998,
+  birth_date: "19.4.1920",
+  death_date: "16.11.1998",
   birthplace: "Helsinki",
   profession: "Carpenter",
 };

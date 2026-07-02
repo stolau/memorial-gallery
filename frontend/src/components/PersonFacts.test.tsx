@@ -20,8 +20,8 @@ const fullPerson: PersonDetailData = {
   bio: "Grandfather",
   profile_image: "profile/kalevi.jpg",
   profile_image_url: "/media/kalevi/profile/kalevi.jpg",
-  birth_year: 1920,
-  death_year: 1998,
+  birth_date: "19.4.1920",
+  death_date: "16.11.1998",
   birthplace: "Helsinki",
   profession: "Carpenter",
 };
@@ -45,13 +45,13 @@ describe("PersonFacts", () => {
     expect(born).toBeTruthy();
     expect(born.querySelector("svg")).toBeTruthy();
     expect(born.querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");
-    expect(screen.getByText("1920")).toBeTruthy();
+    expect(screen.getByText("19.4.1920")).toBeTruthy();
 
     const died = screen.getByLabelText("Kuollut");
     expect(died).toBeTruthy();
     expect(died.querySelector("svg")).toBeTruthy();
     expect(died.querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");
-    expect(screen.getByText("1998")).toBeTruthy();
+    expect(screen.getByText("16.11.1998")).toBeTruthy();
 
     const birthplace = screen.getByLabelText("Syntymäpaikka");
     expect(birthplace).toBeTruthy();

@@ -26,8 +26,8 @@ function PersonForm() {
 
   const [displayName, setDisplayName] = useState("");
   const [bio, setBio] = useState("");
-  const [birthYear, setBirthYear] = useState("");
-  const [deathYear, setDeathYear] = useState("");
+  const [birthDate, setBirthDate] = useState("");
+  const [deathDate, setDeathDate] = useState("");
   const [birthplace, setBirthplace] = useState("");
   const [profession, setProfession] = useState("");
   const [profileFile, setProfileFile] = useState<File | null>(null);
@@ -43,8 +43,8 @@ function PersonForm() {
         const p = detail.person;
         setDisplayName(p.display_name);
         setBio(p.bio ?? "");
-        setBirthYear(p.birth_year !== null ? String(p.birth_year) : "");
-        setDeathYear(p.death_year !== null ? String(p.death_year) : "");
+        setBirthDate(p.birth_date ?? "");
+        setDeathDate(p.death_date ?? "");
         setBirthplace(p.birthplace ?? "");
         setProfession(p.profession ?? "");
         setProfileImageUrl(p.profile_image_url);
@@ -89,25 +89,11 @@ function PersonForm() {
       return v === "" ? null : v;
     };
 
-    const toYear = (raw: string): number | null | "invalid" => {
-      const v = raw.trim();
-      if (v === "") return null;
-      const n = Number(v);
-      return Number.isNaN(n) ? "invalid" : n;
-    };
-
-    const birth = toYear(birthYear);
-    const death = toYear(deathYear);
-    if (birth === "invalid" || death === "invalid") {
-      setError(t("admin.error.invalidYear"));
-      return;
-    }
-
     const payload: PersonCreate & PersonUpdate = {
       display_name: name,
       bio: toNullable(bio),
-      birth_year: birth,
-      death_year: death,
+      birth_date: toNullable(birthDate),
+      death_date: toNullable(deathDate),
       birthplace: toNullable(birthplace),
       profession: toNullable(profession),
     };
@@ -124,8 +110,8 @@ function PersonForm() {
         const p = detail.person;
         setDisplayName(p.display_name);
         setBio(p.bio ?? "");
-        setBirthYear(p.birth_year !== null ? String(p.birth_year) : "");
-        setDeathYear(p.death_year !== null ? String(p.death_year) : "");
+        setBirthDate(p.birth_date ?? "");
+        setDeathDate(p.death_date ?? "");
         setBirthplace(p.birthplace ?? "");
         setProfession(p.profession ?? "");
         setProfileImageUrl(p.profile_image_url);
@@ -160,19 +146,19 @@ function PersonForm() {
           <textarea value={bio} onChange={(e) => setBio(e.target.value)} />
         </label>
         <label>
-          {t("admin.field.birthYear")}
+          {t("admin.field.birthDate")}
           <input
             type="text"
-            value={birthYear}
-            onChange={(e) => setBirthYear(e.target.value)}
+            value={birthDate}
+            onChange={(e) => setBirthDate(e.target.value)}
           />
         </label>
         <label>
-          {t("admin.field.deathYear")}
+          {t("admin.field.deathDate")}
           <input
             type="text"
-            value={deathYear}
-            onChange={(e) => setDeathYear(e.target.value)}
+            value={deathDate}
+            onChange={(e) => setDeathDate(e.target.value)}
           />
         </label>
         <label>

@@ -27,7 +27,7 @@ def base_url(live_server):
     return live_server
 
 
-def _login_and_create_person(page, *, birth_year=None, photos=0):
+def _login_and_create_person(page, *, birth_date=None, photos=0):
     """Log in, create a fresh uniquely-named person, optionally upload photos.
 
     Returns ``(name, slug)``. The slug is the server-side slugification of the
@@ -46,8 +46,8 @@ def _login_and_create_person(page, *, birth_year=None, photos=0):
     # Create the person; the form redirects to its edit page on success.
     page.goto("/admin/people/new")
     page.get_by_label("Nimi").fill(name)
-    if birth_year is not None:
-        page.get_by_label("Syntymävuosi").fill(str(birth_year))
+    if birth_date is not None:
+        page.get_by_label("Syntymäaika").fill(birth_date)
     page.get_by_role("button", name="Tallenna").click()
     page.wait_for_url("**/admin/people/*/edit")
 
@@ -99,7 +99,7 @@ def test_lightbox_autoadvance_toggle(page):
 
 def test_portrait_dialog_and_showinfo(page):
     # (a) Freshly created person: open the portrait dialog from the page button.
-    name, slug = _login_and_create_person(page, birth_year=1930)
+    name, slug = _login_and_create_person(page, birth_date="3.5.1930")
     page.goto(f"/{slug}")
     page.get_by_role("button", name="Näytä tiedot").click()
     dialog = page.get_by_role("dialog")
@@ -107,7 +107,7 @@ def test_portrait_dialog_and_showinfo(page):
     # Scope the heading to the dialog: PersonPage also renders an <h1> with the
     # same name, so an unscoped heading query would be ambiguous.
     expect(dialog.get_by_role("heading", name=name)).to_be_visible()
-    expect(dialog.get_by_text("1930")).to_be_visible()
+    expect(dialog.get_by_text("3.5.1930")).to_be_visible()
     page.get_by_role("button", name="Sulje").click()
     expect(page.get_by_role("dialog")).to_have_count(0)
 

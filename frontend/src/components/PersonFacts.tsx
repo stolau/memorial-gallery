@@ -68,11 +68,11 @@ const ICONS: Record<string, ReactNode> = {
 
 function PersonFacts({ person }: { person: PersonDetailData }) {
   const t = useT();
-  const facts: { key: string; labelKey: string; value: string | number }[] = [];
-  if (person.birth_year !== null)
-    facts.push({ key: "born", labelKey: "person.born", value: person.birth_year });
-  if (person.death_year !== null)
-    facts.push({ key: "died", labelKey: "person.died", value: person.death_year });
+  const facts: { key: string; labelKey: string; value: string }[] = [];
+  if (person.birth_date)
+    facts.push({ key: "born", labelKey: "person.born", value: person.birth_date });
+  if (person.death_date)
+    facts.push({ key: "died", labelKey: "person.died", value: person.death_date });
   if (person.birthplace)
     facts.push({ key: "birthplace", labelKey: "person.birthplace", value: person.birthplace });
   if (person.profession)
