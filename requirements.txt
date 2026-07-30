@@ -1,5 +1,5 @@
 Flask
 python-dotenv
 Flask-Babel
-boto3>=1.34
+boto3>=1.43.57
 Pillow
