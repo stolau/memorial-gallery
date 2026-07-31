@@ -122,13 +122,16 @@
 }
 
 /* Uniform tiles: a wider 3:2 box leaves landscape photos more horizontal
-   room while every box stays the same size (excess is center-cropped). */
+   room while every box stays the same size. Excess is cropped anchored to
+   the TOP of the photo (faces live near the top of portrait shots),
+   horizontally centered. */
 .photo-grid img {
   display: block;
   width: 100%;
   height: auto;
   aspect-ratio: 3 / 2;
   object-fit: cover;
+  object-position: center top;
   border-radius: 6px;
 }
 
