@@ -52,7 +52,7 @@ export const strings: Record<Lang, Record<string, string>> = {
     "admin.action.create": "Luo",
     "admin.folder.none": "Ei kansiota",
     "admin.photos.dragHint":
-      "Järjestä kuvat raahaamalla tai pudota kuva kansioon.",
+      "Järjestä kuvia ja kansioita raahaamalla; pudota kuva kansioon siirtääksesi sen.",
   },
   en: {
     "nav.events": "Events",
@@ -105,6 +105,6 @@ export const strings: Record<Lang, Record<string, string>> = {
     "admin.action.create": "Create",
     "admin.folder.none": "No folder",
     "admin.photos.dragHint":
-      "Drag photos to reorder, or drop one onto a folder.",
+      "Drag photos and folders to reorder; drop a photo onto a folder to move it.",
   },
 };

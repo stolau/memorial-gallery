@@ -143,7 +143,7 @@ def reorder_photos(person_id: int, ids: list[int]) -> bool:
 def list_folders(person_id: int) -> list[dict]:
     rows = get_db().execute(
         "SELECT id, name FROM folders WHERE person_id = ? "
-        "ORDER BY name COLLATE NOCASE, id",
+        "ORDER BY position, name COLLATE NOCASE, id",
         (person_id,),
     ).fetchall()
     return [dict(r) for r in rows]
@@ -152,10 +152,31 @@ def list_folders(person_id: int) -> list[dict]:
 def create_folder(person_id: int, name: str) -> int:
     db = get_db()
     cur = db.execute(
-        "INSERT INTO folders (person_id, name) VALUES (?, ?)", (person_id, name)
+        "INSERT INTO folders (person_id, name, position) "
+        "VALUES (?, ?, (SELECT COALESCE(MAX(position), 0) + 1 FROM folders WHERE person_id = ?))",
+        (person_id, name, person_id),
     )
     db.commit()
     return cur.lastrowid
+
+
+def reorder_folders(person_id: int, ids: list[int]) -> bool:
+    """Twin of reorder_photos for a person's folders."""
+    db = get_db()
+    current = [
+        r["id"]
+        for r in db.execute(
+            "SELECT id FROM folders WHERE person_id = ?", (person_id,)
+        ).fetchall()
+    ]
+    if sorted(ids) != sorted(current):
+        return False
+    db.executemany(
+        "UPDATE folders SET position = ? WHERE id = ?",
+        [(pos, folder_id) for pos, folder_id in enumerate(ids, start=1)],
+    )
+    db.commit()
+    return True
 
 
 def delete_folder(folder_id: int, slug: str) -> bool:

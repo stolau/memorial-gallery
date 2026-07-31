@@ -173,6 +173,17 @@ export function deleteFolder(slug: string, id: number): Promise<Deleted> {
   return sendDelete(`/api/people/${encodeURIComponent(slug)}/folders/${id}`);
 }
 
+export function reorderFolders(
+  slug: string,
+  ids: number[],
+): Promise<CaptionUpdated> {
+  return sendJson(
+    "PUT",
+    `/api/people/${encodeURIComponent(slug)}/folders/order`,
+    { order: ids },
+  );
+}
+
 export function reorderPersonPhotos(
   slug: string,
   ids: number[],

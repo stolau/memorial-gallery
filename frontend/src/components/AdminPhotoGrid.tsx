@@ -28,6 +28,10 @@ interface AdminPhotoGridProps {
   ) => Promise<{ ok: boolean }>;
   onCreateFolder?: (slug: string, name: string) => Promise<Folder>;
   onDeleteFolder?: (slug: string, id: number) => Promise<{ deleted: boolean }>;
+  onReorderFolders?: (
+    slug: string,
+    ids: number[],
+  ) => Promise<{ ok: boolean }>;
 }
 
 function AdminPhotoGrid({
@@ -42,6 +46,7 @@ function AdminPhotoGrid({
   onAssignFolder,
   onCreateFolder,
   onDeleteFolder,
+  onReorderFolders,
 }: AdminPhotoGridProps) {
   const t = useT();
   const { clearAuth } = useAuth();
@@ -51,7 +56,8 @@ function AdminPhotoGrid({
   const [editingId, setEditingId] = useState<number | null>(null);
   const [draft, setDraft] = useState("");
   const [dragId, setDragId] = useState<number | null>(null);
-  // Folder id or "back" while a dragged photo hovers that drop target.
+  const [dragFolderId, setDragFolderId] = useState<number | null>(null);
+  // Folder id or "back" while a dragged photo/folder hovers that drop target.
   const [overTarget, setOverTarget] = useState<number | "back" | null>(null);
   const [openFolderId, setOpenFolderId] = useState<number | null>(null);
   const [addingFolder, setAddingFolder] = useState(false);
@@ -151,6 +157,26 @@ function AdminPhotoGrid({
     }
   };
 
+  const handleDropFolderOnFolder = async (targetFolderId: number) => {
+    setOverTarget(null);
+    const src = dragFolderId;
+    setDragFolderId(null);
+    if (src === null || !onReorderFolders || src === targetFolderId) return;
+    const ids = folders!.map((f) => f.id);
+    const from = ids.indexOf(src);
+    const to = ids.indexOf(targetFolderId);
+    if (from < 0 || to < 0) return;
+    const [moved] = ids.splice(from, 1);
+    ids.splice(to, 0, moved);
+    setError(null);
+    try {
+      await onReorderFolders(slug, ids);
+      onChanged();
+    } catch (err) {
+      handleMutationError(err);
+    }
+  };
+
   const handleCreateFolder = async () => {
     if (!onCreateFolder) return;
     const name = folderName.trim();
@@ -194,10 +220,12 @@ function AdminPhotoGrid({
     }
   };
 
-  // Handlers that make an element accept a dragged photo.
+  // Handlers that make an element accept a dragged photo — or, for real
+  // folder cards, a dragged folder (reorder).
   const dropTarget = (key: number | "back", folderId: number | null) => ({
     onDragOver: (e: React.DragEvent) => {
-      if (dragId === null) return;
+      const folderDrag = dragFolderId !== null && folderId !== null;
+      if (dragId === null && !folderDrag) return;
       e.preventDefault();
       if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
       setOverTarget(key);
@@ -205,7 +233,11 @@ function AdminPhotoGrid({
     onDragLeave: () => setOverTarget(null),
     onDrop: (e: React.DragEvent) => {
       e.preventDefault();
-      handleDropOnFolder(folderId);
+      if (dragFolderId !== null && folderId !== null) {
+        handleDropFolderOnFolder(folderId);
+      } else {
+        handleDropOnFolder(folderId);
+      }
     },
   });
 
@@ -218,14 +250,22 @@ function AdminPhotoGrid({
               key={f.id}
               role="button"
               tabIndex={0}
+              draggable={!!onReorderFolders}
               className={
                 "folder-card folder-drop" +
-                (overTarget === f.id ? " drop-active" : "")
+                (overTarget === f.id ? " drop-active" : "") +
+                (dragFolderId === f.id ? " dragging" : "")
               }
               onClick={() => setOpenFolderId(f.id)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") setOpenFolderId(f.id);
               }}
+              onDragStart={(e) => {
+                e.dataTransfer?.setData("text/plain", `folder-${f.id}`);
+                if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
+                setDragFolderId(f.id);
+              }}
+              onDragEnd={() => setDragFolderId(null)}
               {...dropTarget(f.id, f.id)}
             >
               {onDeleteFolder && (

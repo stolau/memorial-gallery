@@ -14,6 +14,7 @@ import {
   deleteFolder,
   setPhotoFolder,
   reorderPersonPhotos,
+  reorderFolders,
 } from "../../api/admin";
 import type { Folder, Photo, PersonCreate, PersonUpdate } from "../../api/types";
 import { useAuth } from "../../auth/AuthContext";
@@ -228,6 +229,7 @@ function PersonForm() {
           onAssignFolder={setPhotoFolder}
           onCreateFolder={createFolder}
           onDeleteFolder={deleteFolder}
+          onReorderFolders={reorderFolders}
         />
       )}
     </AdminLayout>

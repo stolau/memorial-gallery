@@ -60,12 +60,19 @@ def test_migrate_photo_columns_adds_missing_and_is_idempotent():
         "filename TEXT, caption TEXT, uploaded_at TIMESTAMP)"
     )
 
+    conn.execute(
+        "CREATE TABLE folders (id INTEGER PRIMARY KEY, person_id INTEGER, "
+        "name TEXT, created_at TIMESTAMP)"
+    )
+
     _migrate_photo_columns(conn)
     cols = {r["name"] for r in conn.execute("PRAGMA table_info(photos)")}
     assert {"folder_id", "position"} <= cols
     event_cols = {r["name"] for r in conn.execute("PRAGMA table_info(event_photos)")}
     assert "position" in event_cols
     assert "folder_id" not in event_cols  # events have no folders
+    folder_cols = {r["name"] for r in conn.execute("PRAGMA table_info(folders)")}
+    assert "position" in folder_cols
 
     _migrate_photo_columns(conn)  # idempotent
 
@@ -184,6 +191,47 @@ def test_create_folder_unknown_person_is_404(authed_client):
     assert authed_client.post(
         "/api/people/nobody/folders", json={"name": "x"}
     ).status_code == 404
+
+
+def test_folders_list_in_creation_order_and_reorder_persists(app, authed_client, client):
+    # Created positions win over alphabetical order: "b" first, then "a".
+    b_id = _make_folder(app, "kalevi", "b-kansio")
+    a_id = _make_folder(app, "kalevi", "a-kansio")
+    with app.app_context():
+        pid = models.get_person("kalevi")["id"]
+        assert [f["id"] for f in models.list_folders(pid)] == [b_id, a_id]
+
+    r = authed_client.put(
+        "/api/people/kalevi/folders/order", json={"order": [a_id, b_id]}
+    )
+    assert r.status_code == 200
+    assert r.get_json() == {"ok": True}
+
+    # Public listing reflects the new manual order.
+    pub = client.get("/api/people/kalevi").get_json()
+    assert [f["id"] for f in pub["folders"]] == [a_id, b_id]
+
+
+def test_reorder_folders_rejects_partial_or_foreign_set(app, authed_client):
+    kalevi_folder = _make_folder(app, "kalevi", "K")
+    aino_folder = _make_folder(app, "aino", "A")
+
+    r = authed_client.put(
+        "/api/people/kalevi/folders/order",
+        json={"order": [kalevi_folder, aino_folder]},
+    )
+    assert r.status_code == 400
+    assert authed_client.put(
+        "/api/people/kalevi/folders/order", json={"order": []}
+    ).status_code == 400
+
+
+def test_reorder_folders_requires_auth(app, client):
+    folder_id = _make_folder(app, "kalevi", "K")
+    r = client.put(
+        "/api/people/kalevi/folders/order", json={"order": [folder_id]}
+    )
+    assert r.status_code == 401
 
 
 def test_delete_folder_unsorts_its_photos(app, authed_client):

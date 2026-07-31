@@ -240,6 +240,10 @@
   background: var(--accent-bg, rgba(127, 127, 127, 0.12));
 }
 
+.folder-card.dragging {
+  opacity: 0.5;
+}
+
 .folder-delete {
   position: absolute;
   top: 0.25rem;

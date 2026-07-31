@@ -32,6 +32,7 @@ vi.mock("../../api/admin", () => ({
   deleteFolder: vi.fn(),
   setPhotoFolder: vi.fn(),
   reorderPersonPhotos: vi.fn(),
+  reorderFolders: vi.fn(),
 }));
 
 const { clearAuth } = vi.hoisted(() => ({ clearAuth: vi.fn() }));

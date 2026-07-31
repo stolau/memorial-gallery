@@ -305,3 +305,15 @@ def delete_folder(slug: str, folder_id: int):
     if not models.delete_folder(folder_id, slug):
         return jsonify(error=gettext("Not found.")), 404
     return jsonify(deleted=True), 200
+
+
+@bp.route("/people/<slug>/folders/order", methods=("PUT",))
+@api_login_required
+def reorder_folders(slug: str):
+    p = models.get_person(slug)
+    if not p:
+        return jsonify(error=gettext("Not found.")), 404
+    ids = _photo_order_ids(request.get_json(silent=True) or {})
+    if ids is None or not models.reorder_folders(p["id"], ids):
+        return jsonify(error=gettext("Invalid photo order.")), 400
+    return jsonify(ok=True), 200

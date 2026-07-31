@@ -69,6 +69,7 @@ function renderGrid(props: {
   onAssignFolder?: ReturnType<typeof vi.fn<AssignFolderFn>>;
   onCreateFolder?: ReturnType<typeof vi.fn<CreateFolderFn>>;
   onDeleteFolder?: ReturnType<typeof vi.fn<DeleteFolderFn>>;
+  onReorderFolders?: ReturnType<typeof vi.fn<ReorderFn>>;
 } = {}) {
   const onDeletePhoto =
     props.onDeletePhoto ??
@@ -94,6 +95,7 @@ function renderGrid(props: {
         onAssignFolder={props.onAssignFolder}
         onCreateFolder={props.onCreateFolder}
         onDeleteFolder={props.onDeleteFolder}
+        onReorderFolders={props.onReorderFolders}
       />
     </LangProvider>,
   );
@@ -430,6 +432,32 @@ describe("AdminPhotoGrid folder drop targets", () => {
 
     await waitFor(() => expect(onAssignFolder).toHaveBeenCalledTimes(1));
     expect(onAssignFolder).toHaveBeenCalledWith("kalevi", 10, null);
+    await waitFor(() => expect(onChanged).toHaveBeenCalledTimes(1));
+  });
+
+  it("dragging a folder onto another folder reorders them", async () => {
+    const onAssignFolder = vi
+      .fn<AssignFolderFn>()
+      .mockResolvedValue({ ok: true });
+    const onReorderFolders = vi
+      .fn<ReorderFn>()
+      .mockResolvedValue({ ok: true });
+    const { onChanged } = renderGrid({
+      folders,
+      onAssignFolder,
+      onReorderFolders,
+    });
+
+    // Drag "Lapsuus" (id 5) onto "Työvuodet" (id 6) -> order [6, 5].
+    fireEvent.dragStart(folderCard("Lapsuus"));
+    const target = folderCard("Työvuodet");
+    fireEvent.dragOver(target);
+    fireEvent.drop(target);
+
+    await waitFor(() => expect(onReorderFolders).toHaveBeenCalledTimes(1));
+    expect(onReorderFolders).toHaveBeenCalledWith("kalevi", [6, 5]);
+    // A folder drag must NOT be mistaken for a photo-into-folder move.
+    expect(onAssignFolder).not.toHaveBeenCalled();
     await waitFor(() => expect(onChanged).toHaveBeenCalledTimes(1));
   });
 
