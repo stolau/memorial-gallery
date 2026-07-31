@@ -4,6 +4,14 @@ export interface Photo {
   caption: string | null;
   uploaded_at: string;
   url: string;
+  position?: number;
+  // Person photos only; event photos have no folders.
+  folder_id?: number | null;
+}
+
+export interface Folder {
+  id: number;
+  name: string;
 }
 
 export interface Person {
@@ -25,6 +33,7 @@ export interface PersonDetailData extends Person {
 export interface PersonDetail {
   person: PersonDetailData;
   photos: Photo[];
+  folders: Folder[];
 }
 
 export interface Event {

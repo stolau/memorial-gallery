@@ -12,11 +12,22 @@ CREATE TABLE IF NOT EXISTS people (
     created_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS folders (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    person_id    INTEGER NOT NULL REFERENCES people(id) ON DELETE CASCADE,
+    name         TEXT NOT NULL,
+    created_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_folders_person ON folders(person_id);
+
 CREATE TABLE IF NOT EXISTS photos (
     id           INTEGER PRIMARY KEY AUTOINCREMENT,
     person_id    INTEGER NOT NULL REFERENCES people(id) ON DELETE CASCADE,
     filename     TEXT NOT NULL,
     caption      TEXT,
+    folder_id    INTEGER REFERENCES folders(id) ON DELETE SET NULL,
+    position     INTEGER NOT NULL DEFAULT 0,
     uploaded_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -37,6 +48,7 @@ CREATE TABLE IF NOT EXISTS event_photos (
     event_id     INTEGER NOT NULL REFERENCES events(id) ON DELETE CASCADE,
     filename     TEXT NOT NULL,
     caption      TEXT,
+    position     INTEGER NOT NULL DEFAULT 0,
     uploaded_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 

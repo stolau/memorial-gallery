@@ -24,9 +24,8 @@ function PhotoGrid({ photos }: { photos: Photo[] }) {
               alt={p.caption ?? ""}
               loading="lazy"
               decoding="async"
-              width={640}
-              height={480}
-              style={{ aspectRatio: "4 / 3", width: "100%", height: "auto" }}
+              width={600}
+              height={400}
             />
           </button>
           {p.caption && <figcaption>{p.caption}</figcaption>}

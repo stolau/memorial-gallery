@@ -105,6 +105,7 @@ describe("api client", () => {
           url: "/media/k1.jpg",
         },
       ],
+      folders: [],
     };
 
     vi.spyOn(globalThis, "fetch").mockResolvedValue({

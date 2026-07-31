@@ -4,7 +4,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { LangProvider } from "../i18n/LangContext";
 import AdminPhotoGrid from "./AdminPhotoGrid";
 import type { AuthError } from "../api/auth";
-import type { Photo, UploadResult } from "../api/types";
+import type { Folder, Photo, UploadResult } from "../api/types";
 
 type DeleteFn = (slug: string, id: number) => Promise<{ deleted: boolean }>;
 type UploadFn = (
@@ -16,6 +16,12 @@ type UpdateCaptionFn = (
   slug: string,
   id: number,
   caption: string | null,
+) => Promise<{ ok: boolean }>;
+type ReorderFn = (slug: string, ids: number[]) => Promise<{ ok: boolean }>;
+type AssignFolderFn = (
+  slug: string,
+  id: number,
+  folderId: number | null,
 ) => Promise<{ ok: boolean }>;
 
 // useAuth is mocked so we can observe clearAuth() on a 401. LangContext stays
@@ -52,6 +58,9 @@ function renderGrid(props: {
   onUpload?: ReturnType<typeof vi.fn<UploadFn>>;
   onUpdateCaption?: ReturnType<typeof vi.fn<UpdateCaptionFn>>;
   onChanged?: ReturnType<typeof vi.fn<() => void>>;
+  onReorder?: ReturnType<typeof vi.fn<ReorderFn>>;
+  folders?: Folder[];
+  onAssignFolder?: ReturnType<typeof vi.fn<AssignFolderFn>>;
 } = {}) {
   const onDeletePhoto =
     props.onDeletePhoto ??
@@ -72,6 +81,9 @@ function renderGrid(props: {
         onUpload={onUpload}
         onUpdateCaption={onUpdateCaption}
         onChanged={onChanged}
+        onReorder={props.onReorder}
+        folders={props.folders}
+        onAssignFolder={props.onAssignFolder}
       />
     </LangProvider>,
   );
@@ -264,5 +276,109 @@ describe("AdminPhotoGrid", () => {
     await waitFor(() => expect(clearAuth).toHaveBeenCalledTimes(1));
     // A 401 is a session reset, not an in-page refetch.
     expect(onChanged).not.toHaveBeenCalled();
+  });
+});
+
+function figures(): HTMLElement[] {
+  return Array.from(document.querySelectorAll(".photo-grid figure"));
+}
+
+describe("AdminPhotoGrid drag-and-drop reordering", () => {
+  it("figures are draggable only when onReorder is provided", () => {
+    renderGrid();
+    expect(figures().every((f) => f.getAttribute("draggable") !== "true")).toBe(
+      true,
+    );
+    cleanup();
+
+    renderGrid({ onReorder: vi.fn<ReorderFn>().mockResolvedValue({ ok: true }) });
+    expect(figures().every((f) => f.getAttribute("draggable") === "true")).toBe(
+      true,
+    );
+  });
+
+  it("dropping photo 0 onto photo 1 persists the moved id order then refetches", async () => {
+    const onReorder = vi.fn<ReorderFn>().mockResolvedValue({ ok: true });
+    const { onChanged } = renderGrid({ onReorder });
+
+    const [first, second] = figures();
+    fireEvent.dragStart(first);
+    fireEvent.dragOver(second);
+    fireEvent.drop(second);
+
+    await waitFor(() => expect(onReorder).toHaveBeenCalledTimes(1));
+    // Fixture ids are [10, 11]; moving index 0 after index 1 gives [11, 10].
+    expect(onReorder).toHaveBeenCalledWith("kalevi", [11, 10]);
+    await waitFor(() => expect(onChanged).toHaveBeenCalledTimes(1));
+  });
+
+  it("dropping a photo onto itself neither persists nor refetches (falsifiability)", async () => {
+    const onReorder = vi.fn<ReorderFn>().mockResolvedValue({ ok: true });
+    const { onChanged } = renderGrid({ onReorder });
+
+    const [first] = figures();
+    fireEvent.dragStart(first);
+    fireEvent.drop(first);
+
+    await waitFor(() => {});
+    expect(onReorder).not.toHaveBeenCalled();
+    expect(onChanged).not.toHaveBeenCalled();
+  });
+
+  it("calls clearAuth when the reorder rejects with 401", async () => {
+    const err = { status: 401 } as AuthError;
+    const onReorder = vi.fn<ReorderFn>().mockRejectedValue(err);
+    const { onChanged } = renderGrid({ onReorder });
+
+    const [first, second] = figures();
+    fireEvent.dragStart(first);
+    fireEvent.drop(second);
+
+    await waitFor(() => expect(clearAuth).toHaveBeenCalledTimes(1));
+    expect(onChanged).not.toHaveBeenCalled();
+  });
+});
+
+describe("AdminPhotoGrid folder assignment", () => {
+  const folders: Folder[] = [
+    { id: 5, name: "Lapsuus" },
+    { id: 6, name: "Työvuodet" },
+  ];
+
+  it("renders no folder selects unless folders and onAssignFolder are given", () => {
+    renderGrid();
+    expect(document.querySelectorAll("select")).toHaveLength(0);
+  });
+
+  it("selecting a folder calls onAssignFolder with the numeric id then refetches", async () => {
+    const onAssignFolder = vi
+      .fn<AssignFolderFn>()
+      .mockResolvedValue({ ok: true });
+    const { onChanged } = renderGrid({ folders, onAssignFolder });
+
+    const selects = document.querySelectorAll("select");
+    expect(selects).toHaveLength(photos.length);
+
+    fireEvent.change(selects[0], { target: { value: "5" } });
+
+    await waitFor(() => expect(onAssignFolder).toHaveBeenCalledTimes(1));
+    // First fixture photo has id 10; folder ids are real numbers, not strings.
+    expect(onAssignFolder).toHaveBeenCalledWith("kalevi", 10, 5);
+    await waitFor(() => expect(onChanged).toHaveBeenCalledTimes(1));
+  });
+
+  it("selecting 'Ei kansiota' unassigns with folderId null", async () => {
+    const onAssignFolder = vi
+      .fn<AssignFolderFn>()
+      .mockResolvedValue({ ok: true });
+    renderGrid({ folders, onAssignFolder });
+
+    const selects = document.querySelectorAll("select");
+    fireEvent.change(selects[1], { target: { value: "5" } });
+    await waitFor(() => expect(onAssignFolder).toHaveBeenCalledTimes(1));
+
+    fireEvent.change(selects[1], { target: { value: "" } });
+    await waitFor(() => expect(onAssignFolder).toHaveBeenCalledTimes(2));
+    expect(onAssignFolder).toHaveBeenLastCalledWith("kalevi", 11, null);
   });
 });

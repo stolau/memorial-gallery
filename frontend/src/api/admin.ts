@@ -2,6 +2,7 @@ import type { AuthError } from "./auth";
 import type {
   PersonDetailData,
   Event,
+  Folder,
   PersonCreate,
   PersonUpdate,
   EventCreate,
@@ -147,5 +148,49 @@ export function updateEventPhotoCaption(
     "PATCH",
     `/api/events/${encodeURIComponent(slug)}/photos/${id}`,
     { caption },
+  );
+}
+
+export function setPhotoFolder(
+  slug: string,
+  id: number,
+  folderId: number | null,
+): Promise<CaptionUpdated> {
+  return sendJson(
+    "PATCH",
+    `/api/people/${encodeURIComponent(slug)}/photos/${id}`,
+    { folder_id: folderId },
+  );
+}
+
+export function createFolder(slug: string, name: string): Promise<Folder> {
+  return sendJson("POST", `/api/people/${encodeURIComponent(slug)}/folders`, {
+    name,
+  });
+}
+
+export function deleteFolder(slug: string, id: number): Promise<Deleted> {
+  return sendDelete(`/api/people/${encodeURIComponent(slug)}/folders/${id}`);
+}
+
+export function reorderPersonPhotos(
+  slug: string,
+  ids: number[],
+): Promise<CaptionUpdated> {
+  return sendJson(
+    "PUT",
+    `/api/people/${encodeURIComponent(slug)}/photos/order`,
+    { order: ids },
+  );
+}
+
+export function reorderEventPhotos(
+  slug: string,
+  ids: number[],
+): Promise<CaptionUpdated> {
+  return sendJson(
+    "PUT",
+    `/api/events/${encodeURIComponent(slug)}/photos/order`,
+    { order: ids },
   );
 }

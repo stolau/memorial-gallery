@@ -62,11 +62,32 @@ def _migrate_people_columns(db: sqlite3.Connection) -> None:
             )
 
 
+# Columns added after the photos/event_photos tables first shipped; ALTER'd in
+# on upgrade because CREATE TABLE IF NOT EXISTS skips existing tables.
+PHOTO_COLUMNS: dict[str, str] = {
+    "folder_id": "INTEGER REFERENCES folders(id) ON DELETE SET NULL",
+    "position": "INTEGER NOT NULL DEFAULT 0",
+}
+
+EVENT_PHOTO_COLUMNS: dict[str, str] = {
+    "position": "INTEGER NOT NULL DEFAULT 0",
+}
+
+
+def _migrate_photo_columns(db: sqlite3.Connection) -> None:
+    for table, columns in (("photos", PHOTO_COLUMNS), ("event_photos", EVENT_PHOTO_COLUMNS)):
+        existing = {row["name"] for row in db.execute(f"PRAGMA table_info({table})").fetchall()}
+        for col, ddl in columns.items():
+            if col not in existing:
+                db.execute(f"ALTER TABLE {table} ADD COLUMN {col} {ddl}")
+
+
 def init_db() -> None:
     db = get_db()
     schema = (Path(current_app.root_path) / "schema.sql").read_text()
     db.executescript(schema)
     _migrate_people_columns(db)
+    _migrate_photo_columns(db)
     db.commit()
 
 

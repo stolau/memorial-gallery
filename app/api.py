@@ -18,7 +18,8 @@ def person(slug: str):
         abort(404)
     attach_profile_url(p)
     photos = attach_photo_urls(slug, models.list_photos(p["id"]))
-    return jsonify({"person": p, "photos": photos})
+    folders = models.list_folders(p["id"])
+    return jsonify({"person": p, "photos": photos, "folders": folders})
 
 
 @bp.route("/events")

@@ -221,11 +221,18 @@ def delete_event_photo(slug: str, photo_id: int):
 
 @bp.route("/people/<slug>/photos/<int:photo_id>", methods=("PATCH",))
 @api_login_required
-def update_person_photo_caption(slug: str, photo_id: int):
+def update_person_photo(slug: str, photo_id: int):
     data = request.get_json(silent=True) or {}
-    caption = _str_or_none(data.get("caption"))
-    if not models.update_photo_caption(photo_id, slug, caption):
-        return jsonify(error=gettext("Not found.")), 404
+    if "caption" in data:
+        caption = _str_or_none(data.get("caption"))
+        if not models.update_photo_caption(photo_id, slug, caption):
+            return jsonify(error=gettext("Not found.")), 404
+    if "folder_id" in data:
+        folder_id = data.get("folder_id")
+        if folder_id is not None and not isinstance(folder_id, int):
+            return jsonify(error=gettext("Not found.")), 404
+        if not models.set_photo_folder(photo_id, slug, folder_id):
+            return jsonify(error=gettext("Not found.")), 404
     return jsonify(ok=True), 200
 
 
@@ -237,3 +244,64 @@ def update_event_photo_caption(slug: str, photo_id: int):
     if not models.update_event_photo_caption(photo_id, slug, caption):
         return jsonify(error=gettext("Not found.")), 404
     return jsonify(ok=True), 200
+
+
+# --- Photo ordering -------------------------------------------------------
+
+
+def _photo_order_ids(data: dict) -> list[int] | None:
+    order = data.get("order")
+    if not isinstance(order, list) or not all(
+        isinstance(i, int) and not isinstance(i, bool) for i in order
+    ):
+        return None
+    return order
+
+
+@bp.route("/people/<slug>/photos/order", methods=("PUT",))
+@api_login_required
+def reorder_person_photos(slug: str):
+    p = models.get_person(slug)
+    if not p:
+        return jsonify(error=gettext("Not found.")), 404
+    ids = _photo_order_ids(request.get_json(silent=True) or {})
+    if ids is None or not models.reorder_photos(p["id"], ids):
+        return jsonify(error=gettext("Invalid photo order.")), 400
+    return jsonify(ok=True), 200
+
+
+@bp.route("/events/<slug>/photos/order", methods=("PUT",))
+@api_login_required
+def reorder_event_photos(slug: str):
+    e = models.get_event(slug)
+    if not e:
+        return jsonify(error=gettext("Not found.")), 404
+    ids = _photo_order_ids(request.get_json(silent=True) or {})
+    if ids is None or not models.reorder_event_photos(e["id"], ids):
+        return jsonify(error=gettext("Invalid photo order.")), 400
+    return jsonify(ok=True), 200
+
+
+# --- Folders --------------------------------------------------------------
+
+
+@bp.route("/people/<slug>/folders", methods=("POST",))
+@api_login_required
+def create_folder(slug: str):
+    p = models.get_person(slug)
+    if not p:
+        return jsonify(error=gettext("Not found.")), 404
+    data = request.get_json(silent=True) or {}
+    name = _str_or_none(data.get("name"))
+    if not name:
+        return jsonify(error=gettext("Name is required.")), 400
+    folder_id = models.create_folder(p["id"], name)
+    return jsonify(id=folder_id, name=name), 201
+
+
+@bp.route("/people/<slug>/folders/<int:folder_id>", methods=("DELETE",))
+@api_login_required
+def delete_folder(slug: str, folder_id: int):
+    if not models.delete_folder(folder_id, slug):
+        return jsonify(error=gettext("Not found.")), 404
+    return jsonify(deleted=True), 200

@@ -28,6 +28,10 @@ vi.mock("../../api/admin", () => ({
   deletePersonPhoto: vi.fn(),
   uploadPersonPhotos: vi.fn(),
   updatePhotoCaption: vi.fn(),
+  createFolder: vi.fn(),
+  deleteFolder: vi.fn(),
+  setPhotoFolder: vi.fn(),
+  reorderPersonPhotos: vi.fn(),
 }));
 
 const { clearAuth } = vi.hoisted(() => ({ clearAuth: vi.fn() }));
@@ -75,6 +79,7 @@ const detail: PersonDetail = {
       url: "/media/kalevi/k1.jpg",
     },
   ],
+  folders: [],
 };
 
 function renderCreate() {

@@ -39,6 +39,7 @@ const detail: PersonDetail = {
       url: "/media/kalevi/k2.jpg",
     },
   ],
+  folders: [],
 };
 
 function renderAt(slug: string) {
@@ -167,6 +168,49 @@ describe("PersonPage", () => {
 
     // Auto-open is gated on the query param, so no dialog here.
     expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("with no folders, renders one flat grid and no section headings", async () => {
+    mockedGetPerson.mockResolvedValue(detail); // fixture has folders: []
+
+    renderAt("kalevi");
+    await screen.findByRole("heading", { name: "Kalevi Koski" });
+
+    expect(document.querySelectorAll(".photo-grid")).toHaveLength(1);
+    expect(screen.queryByText("Muut kuvat")).toBeNull();
+  });
+
+  it("groups photos into folder sections, unsorted first under 'Muut kuvat'", async () => {
+    mockedGetPerson.mockResolvedValue({
+      ...detail,
+      photos: [
+        { ...detail.photos[0], folder_id: 1 }, // k1.jpg -> Lapsuus
+        { ...detail.photos[1], folder_id: null }, // k2.jpg -> unsorted
+      ],
+      folders: [
+        { id: 1, name: "Lapsuus" },
+        { id: 2, name: "Tyhjä kansio" },
+      ],
+    });
+
+    renderAt("kalevi");
+    await screen.findByRole("heading", { name: "Kalevi Koski" });
+
+    const sections = Array.from(document.querySelectorAll("section"));
+    // Unsorted section first, then only the NON-empty folder; the empty
+    // folder "Tyhjä kansio" renders no section at all.
+    expect(
+      sections.map((s) => s.querySelector("h2")?.textContent),
+    ).toEqual(["Muut kuvat", "Lapsuus"]);
+    expect(screen.queryByText("Tyhjä kansio")).toBeNull();
+
+    // Each section's grid contains exactly its own photo.
+    const srcsIn = (section: Element) =>
+      Array.from(section.querySelectorAll("img")).map((i) =>
+        i.getAttribute("src"),
+      );
+    expect(srcsIn(sections[0])).toEqual(["/media/kalevi/k2.jpg"]);
+    expect(srcsIn(sections[1])).toEqual(["/media/kalevi/k1.jpg"]);
   });
 });
 

@@ -10,11 +10,16 @@ import {
   deletePersonPhoto,
   uploadPersonPhotos,
   updatePhotoCaption,
+  createFolder,
+  deleteFolder,
+  setPhotoFolder,
+  reorderPersonPhotos,
 } from "../../api/admin";
-import type { Photo, PersonCreate, PersonUpdate } from "../../api/types";
+import type { Folder, Photo, PersonCreate, PersonUpdate } from "../../api/types";
 import { useAuth } from "../../auth/AuthContext";
 import AdminLayout from "../../components/AdminLayout";
 import AdminPhotoGrid from "../../components/AdminPhotoGrid";
+import FolderManager from "../../components/FolderManager";
 import { useT } from "../../i18n/LangContext";
 
 function PersonForm() {
@@ -34,6 +39,7 @@ function PersonForm() {
   const [removeImage, setRemoveImage] = useState(false);
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
   const [photos, setPhotos] = useState<Photo[]>([]);
+  const [folders, setFolders] = useState<Folder[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -49,6 +55,7 @@ function PersonForm() {
         setProfession(p.profession ?? "");
         setProfileImageUrl(p.profile_image_url);
         setPhotos(detail.photos);
+        setFolders(detail.folders);
       })
       // Client read errors carry no .status: treat as generic.
       .catch(() => setError(t("admin.error.generic")));
@@ -70,7 +77,10 @@ function PersonForm() {
   const refetchPhotos = () => {
     if (!slug) return;
     getPerson(slug)
-      .then((detail) => setPhotos(detail.photos))
+      .then((detail) => {
+        setPhotos(detail.photos);
+        setFolders(detail.folders);
+      })
       .catch(() => setError(t("admin.error.generic")));
   };
 
@@ -207,14 +217,26 @@ function PersonForm() {
         {error && <p role="alert">{error}</p>}
       </form>
       {isEdit && slug && (
-        <AdminPhotoGrid
-          slug={slug}
-          photos={photos}
-          onDeletePhoto={deletePersonPhoto}
-          onUpload={uploadPersonPhotos}
-          onUpdateCaption={updatePhotoCaption}
-          onChanged={refetchPhotos}
-        />
+        <>
+          <FolderManager
+            slug={slug}
+            folders={folders}
+            onCreateFolder={createFolder}
+            onDeleteFolder={deleteFolder}
+            onChanged={refetchPhotos}
+          />
+          <AdminPhotoGrid
+            slug={slug}
+            photos={photos}
+            onDeletePhoto={deletePersonPhoto}
+            onUpload={uploadPersonPhotos}
+            onUpdateCaption={updatePhotoCaption}
+            onChanged={refetchPhotos}
+            onReorder={reorderPersonPhotos}
+            folders={folders}
+            onAssignFolder={setPhotoFolder}
+          />
+        </>
       )}
     </AdminLayout>
   );

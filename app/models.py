@@ -61,9 +61,12 @@ def delete_person(person_id: int) -> None:
 
 
 def list_photos(person_id: int) -> list[dict]:
+    # position drives manual ordering; rows that predate it (position 0) fall
+    # back to newest-first among themselves.
     rows = get_db().execute(
-        "SELECT id, filename, caption, uploaded_at "
-        "FROM photos WHERE person_id = ? ORDER BY uploaded_at DESC, id DESC",
+        "SELECT id, filename, caption, folder_id, position, uploaded_at "
+        "FROM photos WHERE person_id = ? "
+        "ORDER BY position, uploaded_at DESC, id DESC",
         (person_id,),
     ).fetchall()
     return [dict(r) for r in rows]
@@ -78,8 +81,9 @@ def count_photos(person_id: int) -> int:
 def add_photo(person_id: int, filename: str, caption: str | None = None) -> int:
     db = get_db()
     cur = db.execute(
-        "INSERT INTO photos (person_id, filename, caption) VALUES (?, ?, ?)",
-        (person_id, filename, caption),
+        "INSERT INTO photos (person_id, filename, caption, position) "
+        "VALUES (?, ?, ?, (SELECT COALESCE(MAX(position), 0) + 1 FROM photos WHERE person_id = ?))",
+        (person_id, filename, caption, person_id),
     )
     db.commit()
     return cur.lastrowid
@@ -109,6 +113,83 @@ def update_photo_caption(photo_id: int, slug: str, caption: str | None) -> bool:
     if row is None:
         return False
     db.execute("UPDATE photos SET caption = ? WHERE id = ?", (caption, photo_id))
+    db.commit()
+    return True
+
+
+def reorder_photos(person_id: int, ids: list[int]) -> bool:
+    """Persist a full manual ordering. ``ids`` must be exactly the person's
+    photo ids (any order); positions become 1..n in the given order."""
+    db = get_db()
+    current = [
+        r["id"]
+        for r in db.execute(
+            "SELECT id FROM photos WHERE person_id = ?", (person_id,)
+        ).fetchall()
+    ]
+    if sorted(ids) != sorted(current):
+        return False
+    db.executemany(
+        "UPDATE photos SET position = ? WHERE id = ?",
+        [(pos, photo_id) for pos, photo_id in enumerate(ids, start=1)],
+    )
+    db.commit()
+    return True
+
+
+# --- Folders --------------------------------------------------------------
+
+
+def list_folders(person_id: int) -> list[dict]:
+    rows = get_db().execute(
+        "SELECT id, name FROM folders WHERE person_id = ? "
+        "ORDER BY name COLLATE NOCASE, id",
+        (person_id,),
+    ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def create_folder(person_id: int, name: str) -> int:
+    db = get_db()
+    cur = db.execute(
+        "INSERT INTO folders (person_id, name) VALUES (?, ?)", (person_id, name)
+    )
+    db.commit()
+    return cur.lastrowid
+
+
+def delete_folder(folder_id: int, slug: str) -> bool:
+    db = get_db()
+    row = db.execute(
+        "SELECT f.id FROM folders f JOIN people p ON p.id = f.person_id "
+        "WHERE f.id = ? AND p.slug = ?",
+        (folder_id, slug),
+    ).fetchone()
+    if row is None:
+        return False
+    # photos.folder_id has ON DELETE SET NULL: photos become unsorted.
+    db.execute("DELETE FROM folders WHERE id = ?", (folder_id,))
+    db.commit()
+    return True
+
+
+def set_photo_folder(photo_id: int, slug: str, folder_id: int | None) -> bool:
+    db = get_db()
+    photo = db.execute(
+        "SELECT ph.id, ph.person_id FROM photos ph JOIN people p ON p.id = ph.person_id "
+        "WHERE ph.id = ? AND p.slug = ?",
+        (photo_id, slug),
+    ).fetchone()
+    if photo is None:
+        return False
+    if folder_id is not None:
+        folder = db.execute(
+            "SELECT id FROM folders WHERE id = ? AND person_id = ?",
+            (folder_id, photo["person_id"]),
+        ).fetchone()
+        if folder is None:
+            return False
+    db.execute("UPDATE photos SET folder_id = ? WHERE id = ?", (folder_id, photo_id))
     db.commit()
     return True
 
@@ -173,8 +254,9 @@ def delete_event(event_id: int) -> None:
 
 def list_event_photos(event_id: int) -> list[dict]:
     rows = get_db().execute(
-        "SELECT id, filename, caption, uploaded_at "
-        "FROM event_photos WHERE event_id = ? ORDER BY uploaded_at DESC, id DESC",
+        "SELECT id, filename, caption, position, uploaded_at "
+        "FROM event_photos WHERE event_id = ? "
+        "ORDER BY position, uploaded_at DESC, id DESC",
         (event_id,),
     ).fetchall()
     return [dict(r) for r in rows]
@@ -189,8 +271,9 @@ def count_event_photos(event_id: int) -> int:
 def add_event_photo(event_id: int, filename: str, caption: str | None = None) -> int:
     db = get_db()
     cur = db.execute(
-        "INSERT INTO event_photos (event_id, filename, caption) VALUES (?, ?, ?)",
-        (event_id, filename, caption),
+        "INSERT INTO event_photos (event_id, filename, caption, position) "
+        "VALUES (?, ?, ?, (SELECT COALESCE(MAX(position), 0) + 1 FROM event_photos WHERE event_id = ?))",
+        (event_id, filename, caption, event_id),
     )
     db.commit()
     return cur.lastrowid
@@ -220,5 +303,24 @@ def update_event_photo_caption(photo_id: int, slug: str, caption: str | None) ->
     if row is None:
         return False
     db.execute("UPDATE event_photos SET caption = ? WHERE id = ?", (caption, photo_id))
+    db.commit()
+    return True
+
+
+def reorder_event_photos(event_id: int, ids: list[int]) -> bool:
+    """Twin of reorder_photos for event galleries."""
+    db = get_db()
+    current = [
+        r["id"]
+        for r in db.execute(
+            "SELECT id FROM event_photos WHERE event_id = ?", (event_id,)
+        ).fetchall()
+    ]
+    if sorted(ids) != sorted(current):
+        return False
+    db.executemany(
+        "UPDATE event_photos SET position = ? WHERE id = ?",
+        [(pos, photo_id) for pos, photo_id in enumerate(ids, start=1)],
+    )
     db.commit()
     return True

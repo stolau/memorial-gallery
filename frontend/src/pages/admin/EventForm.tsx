@@ -8,6 +8,7 @@ import {
   deleteEventPhoto,
   uploadEventPhotos,
   updateEventPhotoCaption,
+  reorderEventPhotos,
 } from "../../api/admin";
 import type { Photo, EventCreate, EventUpdate } from "../../api/types";
 import { useAuth } from "../../auth/AuthContext";
@@ -150,6 +151,7 @@ function EventForm() {
           onUpload={uploadEventPhotos}
           onUpdateCaption={updateEventPhotoCaption}
           onChanged={refetchPhotos}
+          onReorder={reorderEventPhotos}
         />
       )}
     </AdminLayout>

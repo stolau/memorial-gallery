@@ -27,6 +27,7 @@ vi.mock("../../api/admin", () => ({
   deleteEventPhoto: vi.fn(),
   uploadEventPhotos: vi.fn(),
   updateEventPhotoCaption: vi.fn(),
+  reorderEventPhotos: vi.fn(),
   // Included so the test can prove it is NEVER called from EventForm (FIX 2).
   deletePersonPhoto: vi.fn(),
 }));

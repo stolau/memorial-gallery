@@ -1,11 +1,47 @@
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { getPerson } from "../api/client";
-import type { PersonDetail } from "../api/types";
+import type { Folder, PersonDetail, Photo } from "../api/types";
 import Layout from "../components/Layout";
 import PhotoGrid from "../components/PhotoGrid";
 import PortraitDialog from "../components/PortraitDialog";
 import { useT } from "../i18n/LangContext";
+
+/* One gallery section per folder; photos without a folder come first under
+   their own heading. With no folders at all, the flat grid stays as-is. */
+function FolderedPhotos({
+  photos,
+  folders,
+}: {
+  photos: Photo[];
+  folders: Folder[];
+}) {
+  const t = useT();
+  if (folders.length === 0 || photos.length === 0) {
+    return <PhotoGrid photos={photos} />;
+  }
+  const unsorted = photos.filter((p) => p.folder_id == null);
+  return (
+    <>
+      {unsorted.length > 0 && (
+        <section>
+          <h2 className="folder-heading">{t("photos.unsorted")}</h2>
+          <PhotoGrid photos={unsorted} />
+        </section>
+      )}
+      {folders.map((f) => {
+        const inFolder = photos.filter((p) => p.folder_id === f.id);
+        if (inFolder.length === 0) return null;
+        return (
+          <section key={f.id}>
+            <h2 className="folder-heading">{f.name}</h2>
+            <PhotoGrid photos={inFolder} />
+          </section>
+        );
+      })}
+    </>
+  );
+}
 
 function PersonPage() {
   const t = useT();
@@ -40,7 +76,7 @@ function PersonPage() {
           <button type="button" onClick={() => setPortraitOpen(true)}>
             {t("person.portrait")}
           </button>
-          <PhotoGrid photos={detail.photos} />
+          <FolderedPhotos photos={detail.photos} folders={detail.folders} />
         </>
       )}
       {detail && portraitOpen && (

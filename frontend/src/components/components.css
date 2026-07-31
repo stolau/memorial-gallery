@@ -121,12 +121,59 @@
   margin: 0;
 }
 
+/* Uniform tiles: a wider 3:2 box leaves landscape photos more horizontal
+   room while every box stays the same size (excess is center-cropped). */
 .photo-grid img {
   display: block;
   width: 100%;
-  height: 180px;
+  height: auto;
+  aspect-ratio: 3 / 2;
   object-fit: cover;
   border-radius: 6px;
+}
+
+/* Folder sections on a person page */
+.folder-heading {
+  margin: 2rem 0 0;
+  font-size: 1.15rem;
+  color: var(--text-h);
+  text-align: left;
+}
+
+/* Drag-to-reorder affordances (edit mode) */
+.photo-grid figure[draggable="true"] {
+  cursor: grab;
+}
+
+.photo-grid figure.dragging {
+  opacity: 0.5;
+}
+
+.drag-hint {
+  color: var(--text);
+  font-size: 0.85rem;
+  text-align: left;
+  margin: 1rem 0 0;
+}
+
+/* Per-photo folder assignment (edit mode) */
+.folder-select {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--text-h);
+}
+
+.folder-select select {
+  font: inherit;
+  padding: 0.25rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text-h);
+  max-width: 100%;
 }
 
 .photo-grid figcaption {

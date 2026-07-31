@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import type { AuthError } from "../api/auth";
-import type { Photo, UploadResult } from "../api/types";
+import type { Folder, Photo, UploadResult } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
 import { useT } from "../i18n/LangContext";
 
@@ -19,6 +19,13 @@ interface AdminPhotoGridProps {
     caption: string | null,
   ) => Promise<{ ok: boolean }>;
   onChanged: () => void;
+  onReorder?: (slug: string, ids: number[]) => Promise<{ ok: boolean }>;
+  folders?: Folder[];
+  onAssignFolder?: (
+    slug: string,
+    id: number,
+    folderId: number | null,
+  ) => Promise<{ ok: boolean }>;
 }
 
 function AdminPhotoGrid({
@@ -28,6 +35,9 @@ function AdminPhotoGrid({
   onUpload,
   onUpdateCaption,
   onChanged,
+  onReorder,
+  folders,
+  onAssignFolder,
 }: AdminPhotoGridProps) {
   const t = useT();
   const { clearAuth } = useAuth();
@@ -36,6 +46,7 @@ function AdminPhotoGrid({
   const [files, setFiles] = useState<File[]>([]);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [draft, setDraft] = useState("");
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function handleMutationError(err: unknown) {
@@ -73,6 +84,34 @@ function AdminPhotoGrid({
     }
   };
 
+  const handleDrop = async (targetIndex: number) => {
+    if (dragIndex === null) return;
+    const from = dragIndex;
+    setDragIndex(null);
+    if (!onReorder || from === targetIndex) return;
+    const ids = photos.map((p) => p.id);
+    const [moved] = ids.splice(from, 1);
+    ids.splice(targetIndex, 0, moved);
+    setError(null);
+    try {
+      await onReorder(slug, ids);
+      onChanged();
+    } catch (err) {
+      handleMutationError(err);
+    }
+  };
+
+  const handleAssignFolder = async (id: number, raw: string) => {
+    if (!onAssignFolder) return;
+    setError(null);
+    try {
+      await onAssignFolder(slug, id, raw === "" ? null : Number(raw));
+      onChanged();
+    } catch (err) {
+      handleMutationError(err);
+    }
+  };
+
   const handleUpload = async () => {
     if (files.length === 0) return;
     setError(null);
@@ -91,19 +130,54 @@ function AdminPhotoGrid({
 
   return (
     <div>
+      {onReorder && photos.length > 1 && (
+        <p className="drag-hint">{t("admin.photos.dragHint")}</p>
+      )}
       <div className="photo-grid">
-        {photos.map((p) => (
-          <figure key={p.id}>
+        {photos.map((p, i) => (
+          <figure
+            key={p.id}
+            draggable={!!onReorder}
+            className={dragIndex === i ? "dragging" : undefined}
+            onDragStart={(e) => {
+              // Firefox refuses to start a drag without data attached.
+              e.dataTransfer?.setData("text/plain", String(p.id));
+              setDragIndex(i);
+            }}
+            onDragEnd={() => setDragIndex(null)}
+            onDragOver={(e) => {
+              if (onReorder) e.preventDefault();
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              handleDrop(i);
+            }}
+          >
             <img
               src={p.url}
               alt={p.caption ?? ""}
               loading="lazy"
               decoding="async"
-              width={640}
-              height={480}
-              style={{ aspectRatio: "4 / 3", width: "100%", height: "auto" }}
+              width={600}
+              height={400}
             />
             {p.caption && <figcaption>{p.caption}</figcaption>}
+            {folders && onAssignFolder && (
+              <label className="folder-select">
+                {t("admin.folder.label")}
+                <select
+                  value={p.folder_id ?? ""}
+                  onChange={(e) => handleAssignFolder(p.id, e.target.value)}
+                >
+                  <option value="">{t("admin.folder.none")}</option>
+                  {folders.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
             {editingId === p.id ? (
               <>
                 <input
