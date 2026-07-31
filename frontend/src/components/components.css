@@ -134,9 +134,69 @@
   border-radius: 6px;
 }
 
-/* Folder sections on a person page */
+/* Folder cards on a person page: a distinct row above the photos */
+.folder-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: 1.5rem 0 0.5rem;
+}
+
+.folder-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 120px;
+  padding: 1rem 1.25rem;
+  font: inherit;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.folder-card:hover {
+  border-color: var(--accent-border);
+}
+
+.folder-name {
+  font-weight: 500;
+  color: var(--text-h);
+}
+
+.folder-count {
+  font-size: 0.85rem;
+  color: var(--text);
+}
+
+/* Opened-folder view: back button + folder name */
+.folder-bar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.folder-back {
+  font: inherit;
+  font-size: 0.9rem;
+  padding: 0.35rem 0.8rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+  cursor: pointer;
+}
+
+.folder-back:hover {
+  border-color: var(--accent-border);
+  color: var(--accent);
+}
+
 .folder-heading {
-  margin: 2rem 0 0;
+  margin: 0;
   font-size: 1.15rem;
   color: var(--text-h);
   text-align: left;
@@ -158,24 +218,75 @@
   margin: 1rem 0 0;
 }
 
-/* Per-photo folder assignment (edit mode) */
-.folder-select {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-top: 0.4rem;
-  font-size: 0.85rem;
-  color: var(--text-h);
+/* Edit-mode folder row: cards double as drop targets for dragged photos */
+.folder-drop {
+  position: relative;
+  cursor: default;
 }
 
-.folder-select select {
+.folder-card.drop-active {
+  border-color: var(--accent-border);
+  background: var(--accent-bg, rgba(127, 127, 127, 0.12));
+}
+
+.folder-delete {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.35rem;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0.1rem 0.25rem;
+  cursor: pointer;
+}
+
+.folder-delete:hover {
+  color: var(--accent);
+}
+
+.folder-unsort,
+button.folder-add {
+  border-style: dashed;
+  justify-content: center;
+}
+
+.folder-plus {
+  font-size: 1.75rem;
+  line-height: 1;
+}
+
+.folder-add input {
   font: inherit;
-  padding: 0.25rem 0.4rem;
+  width: 9rem;
+  padding: 0.3rem 0.45rem;
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--bg);
   color: var(--text-h);
-  max-width: 100%;
+}
+
+.folder-add button:not(.folder-delete) {
+  font: inherit;
+  font-size: 0.9rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+  cursor: pointer;
+}
+
+/* Small badge showing which folder a photo belongs to (edit mode) */
+.photo-folder-badge {
+  display: inline-block;
+  margin-top: 0.4rem;
+  font-size: 0.75rem;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text);
 }
 
 .photo-grid figcaption {

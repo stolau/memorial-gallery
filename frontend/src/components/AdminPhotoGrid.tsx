@@ -26,6 +26,8 @@ interface AdminPhotoGridProps {
     id: number,
     folderId: number | null,
   ) => Promise<{ ok: boolean }>;
+  onCreateFolder?: (slug: string, name: string) => Promise<Folder>;
+  onDeleteFolder?: (slug: string, id: number) => Promise<{ deleted: boolean }>;
 }
 
 function AdminPhotoGrid({
@@ -38,6 +40,8 @@ function AdminPhotoGrid({
   onReorder,
   folders,
   onAssignFolder,
+  onCreateFolder,
+  onDeleteFolder,
 }: AdminPhotoGridProps) {
   const t = useT();
   const { clearAuth } = useAuth();
@@ -47,7 +51,15 @@ function AdminPhotoGrid({
   const [editingId, setEditingId] = useState<number | null>(null);
   const [draft, setDraft] = useState("");
   const [dragIndex, setDragIndex] = useState<number | null>(null);
+  // Folder id, "none" for the unsort zone, or null when not hovering a target.
+  const [overFolder, setOverFolder] = useState<number | "none" | null>(null);
+  const [addingFolder, setAddingFolder] = useState(false);
+  const [folderName, setFolderName] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const folderUi = folders !== undefined && !!onAssignFolder;
+  const folderName_ = (id: number | null | undefined) =>
+    folders?.find((f) => f.id === id)?.name;
 
   function handleMutationError(err: unknown) {
     const s = (err as AuthError).status;
@@ -84,7 +96,7 @@ function AdminPhotoGrid({
     }
   };
 
-  const handleDrop = async (targetIndex: number) => {
+  const handleDropOnPhoto = async (targetIndex: number) => {
     if (dragIndex === null) return;
     const from = dragIndex;
     setDragIndex(null);
@@ -101,11 +113,42 @@ function AdminPhotoGrid({
     }
   };
 
-  const handleAssignFolder = async (id: number, raw: string) => {
-    if (!onAssignFolder) return;
+  const handleDropOnFolder = async (folderId: number | null) => {
+    setOverFolder(null);
+    if (dragIndex === null || !onAssignFolder) return;
+    const photo = photos[dragIndex];
+    setDragIndex(null);
+    if ((photo.folder_id ?? null) === folderId) return;
     setError(null);
     try {
-      await onAssignFolder(slug, id, raw === "" ? null : Number(raw));
+      await onAssignFolder(slug, photo.id, folderId);
+      onChanged();
+    } catch (err) {
+      handleMutationError(err);
+    }
+  };
+
+  const handleCreateFolder = async () => {
+    if (!onCreateFolder) return;
+    const name = folderName.trim();
+    if (name === "") return;
+    setError(null);
+    try {
+      await onCreateFolder(slug, name);
+      setFolderName("");
+      setAddingFolder(false);
+      onChanged();
+    } catch (err) {
+      handleMutationError(err);
+    }
+  };
+
+  const handleDeleteFolder = async (id: number) => {
+    if (!onDeleteFolder) return;
+    if (!window.confirm(t("admin.action.delete"))) return;
+    setError(null);
+    try {
+      await onDeleteFolder(slug, id);
       onChanged();
     } catch (err) {
       handleMutationError(err);
@@ -128,8 +171,91 @@ function AdminPhotoGrid({
     }
   };
 
+  // Shared handlers that make an element accept a dragged photo.
+  const dropTarget = (key: number | "none", folderId: number | null) => ({
+    onDragOver: (e: React.DragEvent) => {
+      if (dragIndex === null) return;
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+      setOverFolder(key);
+    },
+    onDragLeave: () => setOverFolder(null),
+    onDrop: (e: React.DragEvent) => {
+      e.preventDefault();
+      handleDropOnFolder(folderId);
+    },
+  });
+
   return (
     <div>
+      {folderUi && (
+        <div className="folder-grid">
+          {folders!.map((f) => (
+            <div
+              key={f.id}
+              className={
+                "folder-card folder-drop" +
+                (overFolder === f.id ? " drop-active" : "")
+              }
+              {...dropTarget(f.id, f.id)}
+            >
+              {onDeleteFolder && (
+                <button
+                  type="button"
+                  className="folder-delete"
+                  aria-label={`${t("admin.action.delete")} ${f.name}`}
+                  onClick={() => handleDeleteFolder(f.id)}
+                >
+                  ×
+                </button>
+              )}
+              <span className="folder-name">{f.name}</span>
+              <span className="folder-count">
+                {photos.filter((p) => p.folder_id === f.id).length}
+              </span>
+            </div>
+          ))}
+          {folders!.length > 0 && (
+            <div
+              className={
+                "folder-card folder-unsort" +
+                (overFolder === "none" ? " drop-active" : "")
+              }
+              {...dropTarget("none", null)}
+            >
+              <span className="folder-name">{t("admin.folder.none")}</span>
+            </div>
+          )}
+          {onCreateFolder &&
+            (addingFolder ? (
+              <div className="folder-card folder-add">
+                <input
+                  type="text"
+                  aria-label={t("admin.folders.name")}
+                  value={folderName}
+                  autoFocus
+                  onChange={(e) => setFolderName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleCreateFolder();
+                    if (e.key === "Escape") setAddingFolder(false);
+                  }}
+                />
+                <button type="button" onClick={handleCreateFolder}>
+                  {t("admin.action.create")}
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                className="folder-card folder-add"
+                aria-label={t("admin.folders.new")}
+                onClick={() => setAddingFolder(true)}
+              >
+                <span className="folder-plus">+</span>
+              </button>
+            ))}
+        </div>
+      )}
       {onReorder && photos.length > 1 && (
         <p className="drag-hint">{t("admin.photos.dragHint")}</p>
       )}
@@ -137,20 +263,24 @@ function AdminPhotoGrid({
         {photos.map((p, i) => (
           <figure
             key={p.id}
-            draggable={!!onReorder}
+            draggable={!!onReorder || folderUi}
             className={dragIndex === i ? "dragging" : undefined}
             onDragStart={(e) => {
               // Firefox refuses to start a drag without data attached.
               e.dataTransfer?.setData("text/plain", String(p.id));
+              if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
               setDragIndex(i);
             }}
             onDragEnd={() => setDragIndex(null)}
             onDragOver={(e) => {
-              if (onReorder) e.preventDefault();
+              if (onReorder && dragIndex !== null) {
+                e.preventDefault();
+                if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+              }
             }}
             onDrop={(e) => {
               e.preventDefault();
-              handleDrop(i);
+              handleDropOnPhoto(i);
             }}
           >
             <img
@@ -160,23 +290,15 @@ function AdminPhotoGrid({
               decoding="async"
               width={600}
               height={400}
+              // The figure is the drag source; a draggable img would hijack
+              // the gesture with the browser's native image drag.
+              draggable={false}
             />
             {p.caption && <figcaption>{p.caption}</figcaption>}
-            {folders && onAssignFolder && (
-              <label className="folder-select">
-                {t("admin.folder.label")}
-                <select
-                  value={p.folder_id ?? ""}
-                  onChange={(e) => handleAssignFolder(p.id, e.target.value)}
-                >
-                  <option value="">{t("admin.folder.none")}</option>
-                  {folders.map((f) => (
-                    <option key={f.id} value={f.id}>
-                      {f.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
+            {folderUi && folderName_(p.folder_id) && (
+              <span className="photo-folder-badge">
+                {folderName_(p.folder_id)}
+              </span>
             )}
             {editingId === p.id ? (
               <>

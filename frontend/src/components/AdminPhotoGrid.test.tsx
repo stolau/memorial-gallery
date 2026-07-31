@@ -23,6 +23,11 @@ type AssignFolderFn = (
   id: number,
   folderId: number | null,
 ) => Promise<{ ok: boolean }>;
+type CreateFolderFn = (slug: string, name: string) => Promise<Folder>;
+type DeleteFolderFn = (
+  slug: string,
+  id: number,
+) => Promise<{ deleted: boolean }>;
 
 // useAuth is mocked so we can observe clearAuth() on a 401. LangContext stays
 // real (wrapped in LangProvider) so the rendered text is the genuine fi copy.
@@ -54,6 +59,7 @@ const photos: Photo[] = [
 ];
 
 function renderGrid(props: {
+  photos?: Photo[];
   onDeletePhoto?: ReturnType<typeof vi.fn<DeleteFn>>;
   onUpload?: ReturnType<typeof vi.fn<UploadFn>>;
   onUpdateCaption?: ReturnType<typeof vi.fn<UpdateCaptionFn>>;
@@ -61,6 +67,8 @@ function renderGrid(props: {
   onReorder?: ReturnType<typeof vi.fn<ReorderFn>>;
   folders?: Folder[];
   onAssignFolder?: ReturnType<typeof vi.fn<AssignFolderFn>>;
+  onCreateFolder?: ReturnType<typeof vi.fn<CreateFolderFn>>;
+  onDeleteFolder?: ReturnType<typeof vi.fn<DeleteFolderFn>>;
 } = {}) {
   const onDeletePhoto =
     props.onDeletePhoto ??
@@ -76,7 +84,7 @@ function renderGrid(props: {
     <LangProvider>
       <AdminPhotoGrid
         slug="kalevi"
-        photos={photos}
+        photos={props.photos ?? photos}
         onDeletePhoto={onDeletePhoto}
         onUpload={onUpload}
         onUpdateCaption={onUpdateCaption}
@@ -84,6 +92,8 @@ function renderGrid(props: {
         onReorder={props.onReorder}
         folders={props.folders}
         onAssignFolder={props.onAssignFolder}
+        onCreateFolder={props.onCreateFolder}
+        onDeleteFolder={props.onDeleteFolder}
       />
     </LangProvider>,
   );
@@ -339,46 +349,139 @@ describe("AdminPhotoGrid drag-and-drop reordering", () => {
   });
 });
 
-describe("AdminPhotoGrid folder assignment", () => {
+describe("AdminPhotoGrid folder drop targets", () => {
   const folders: Folder[] = [
     { id: 5, name: "Lapsuus" },
     { id: 6, name: "Työvuodet" },
   ];
 
-  it("renders no folder selects unless folders and onAssignFolder are given", () => {
+  function folderCard(name: string): HTMLElement {
+    const el = Array.from(
+      document.querySelectorAll(".folder-card"),
+    ).find((c) => c.textContent?.includes(name));
+    if (!el) throw new Error(`folder card ${name} not found`);
+    return el as HTMLElement;
+  }
+
+  it("renders no folder row unless folders and onAssignFolder are given", () => {
     renderGrid();
-    expect(document.querySelectorAll("select")).toHaveLength(0);
+    expect(document.querySelector(".folder-grid")).toBeNull();
   });
 
-  it("selecting a folder calls onAssignFolder with the numeric id then refetches", async () => {
+  it("dropping a photo onto a folder card assigns it then refetches", async () => {
     const onAssignFolder = vi
       .fn<AssignFolderFn>()
       .mockResolvedValue({ ok: true });
     const { onChanged } = renderGrid({ folders, onAssignFolder });
 
-    const selects = document.querySelectorAll("select");
-    expect(selects).toHaveLength(photos.length);
-
-    fireEvent.change(selects[0], { target: { value: "5" } });
+    // Drag the first photo (id 10) onto the "Lapsuus" card (id 5).
+    fireEvent.dragStart(figures()[0]);
+    const card = folderCard("Lapsuus");
+    fireEvent.dragOver(card);
+    fireEvent.drop(card);
 
     await waitFor(() => expect(onAssignFolder).toHaveBeenCalledTimes(1));
-    // First fixture photo has id 10; folder ids are real numbers, not strings.
     expect(onAssignFolder).toHaveBeenCalledWith("kalevi", 10, 5);
     await waitFor(() => expect(onChanged).toHaveBeenCalledTimes(1));
   });
 
-  it("selecting 'Ei kansiota' unassigns with folderId null", async () => {
+  it("dropping onto 'Ei kansiota' unassigns with folderId null", async () => {
     const onAssignFolder = vi
       .fn<AssignFolderFn>()
       .mockResolvedValue({ ok: true });
-    renderGrid({ folders, onAssignFolder });
+    renderGrid({
+      photos: [{ ...photos[0], folder_id: 5 }, photos[1]],
+      folders,
+      onAssignFolder,
+    });
 
-    const selects = document.querySelectorAll("select");
-    fireEvent.change(selects[1], { target: { value: "5" } });
+    fireEvent.dragStart(figures()[0]);
+    const zone = folderCard("Ei kansiota");
+    fireEvent.dragOver(zone);
+    fireEvent.drop(zone);
+
     await waitFor(() => expect(onAssignFolder).toHaveBeenCalledTimes(1));
+    expect(onAssignFolder).toHaveBeenCalledWith("kalevi", 10, null);
+  });
 
-    fireEvent.change(selects[1], { target: { value: "" } });
-    await waitFor(() => expect(onAssignFolder).toHaveBeenCalledTimes(2));
-    expect(onAssignFolder).toHaveBeenLastCalledWith("kalevi", 11, null);
+  it("does NOT call the API when dropping a photo onto its current folder", async () => {
+    const onAssignFolder = vi
+      .fn<AssignFolderFn>()
+      .mockResolvedValue({ ok: true });
+    const { onChanged } = renderGrid({
+      photos: [{ ...photos[0], folder_id: 5 }, photos[1]],
+      folders,
+      onAssignFolder,
+    });
+
+    fireEvent.dragStart(figures()[0]);
+    fireEvent.drop(folderCard("Lapsuus"));
+
+    await waitFor(() => {});
+    expect(onAssignFolder).not.toHaveBeenCalled();
+    expect(onChanged).not.toHaveBeenCalled();
+  });
+
+  it("the + card opens a naming input and creates the trimmed folder", async () => {
+    const onCreateFolder = vi
+      .fn<CreateFolderFn>()
+      .mockResolvedValue({ id: 7, name: "Kesä" });
+    const onAssignFolder = vi
+      .fn<AssignFolderFn>()
+      .mockResolvedValue({ ok: true });
+    const { onChanged } = renderGrid({
+      folders,
+      onAssignFolder,
+      onCreateFolder,
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Uusi kansio" }));
+    fireEvent.change(screen.getByLabelText("Kansion nimi"), {
+      target: { value: "  Kesä  " },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Luo" }));
+
+    await waitFor(() => expect(onCreateFolder).toHaveBeenCalledTimes(1));
+    expect(onCreateFolder).toHaveBeenCalledWith("kalevi", "Kesä");
+    await waitFor(() => expect(onChanged).toHaveBeenCalledTimes(1));
+  });
+
+  it("deletes a folder from its × button after confirm", async () => {
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    const onDeleteFolder = vi
+      .fn<DeleteFolderFn>()
+      .mockResolvedValue({ deleted: true });
+    const onAssignFolder = vi
+      .fn<AssignFolderFn>()
+      .mockResolvedValue({ ok: true });
+    const { onChanged } = renderGrid({
+      folders,
+      onAssignFolder,
+      onDeleteFolder,
+    });
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Poista Työvuodet" }),
+    );
+
+    await waitFor(() => expect(onDeleteFolder).toHaveBeenCalledTimes(1));
+    expect(onDeleteFolder).toHaveBeenCalledWith("kalevi", 6);
+    await waitFor(() => expect(onChanged).toHaveBeenCalledTimes(1));
+  });
+
+  it("shows the folder name as a badge on assigned photos", () => {
+    const onAssignFolder = vi
+      .fn<AssignFolderFn>()
+      .mockResolvedValue({ ok: true });
+    renderGrid({
+      photos: [{ ...photos[0], folder_id: 5 }, photos[1]],
+      folders,
+      onAssignFolder,
+    });
+
+    const badges = Array.from(
+      document.querySelectorAll(".photo-folder-badge"),
+    ).map((b) => b.textContent);
+    expect(badges).toEqual(["Lapsuus"]);
   });
 });

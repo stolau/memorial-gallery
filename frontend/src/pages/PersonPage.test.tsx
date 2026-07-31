@@ -170,47 +170,71 @@ describe("PersonPage", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
-  it("with no folders, renders one flat grid and no section headings", async () => {
+  it("with no folders, renders one flat grid and no folder cards", async () => {
     mockedGetPerson.mockResolvedValue(detail); // fixture has folders: []
 
     renderAt("kalevi");
     await screen.findByRole("heading", { name: "Kalevi Koski" });
 
     expect(document.querySelectorAll(".photo-grid")).toHaveLength(1);
-    expect(screen.queryByText("Muut kuvat")).toBeNull();
+    expect(document.querySelector(".folder-card")).toBeNull();
   });
 
-  it("groups photos into folder sections, unsorted first under 'Muut kuvat'", async () => {
-    mockedGetPerson.mockResolvedValue({
-      ...detail,
-      photos: [
-        { ...detail.photos[0], folder_id: 1 }, // k1.jpg -> Lapsuus
-        { ...detail.photos[1], folder_id: null }, // k2.jpg -> unsorted
-      ],
-      folders: [
-        { id: 1, name: "Lapsuus" },
-        { id: 2, name: "Tyhjä kansio" },
-      ],
-    });
+  const foldersDetail = {
+    ...detail,
+    photos: [
+      { ...detail.photos[0], folder_id: 1 }, // k1.jpg -> Lapsuus
+      { ...detail.photos[1], folder_id: null }, // k2.jpg -> unsorted
+    ],
+    folders: [
+      { id: 1, name: "Lapsuus" },
+      { id: 2, name: "Tyhjä kansio" },
+    ],
+  };
+
+  it("shows folder cards above the photos; folder contents stay hidden", async () => {
+    mockedGetPerson.mockResolvedValue(foldersDetail);
 
     renderAt("kalevi");
     await screen.findByRole("heading", { name: "Kalevi Koski" });
 
-    const sections = Array.from(document.querySelectorAll("section"));
-    // Unsorted section first, then only the NON-empty folder; the empty
-    // folder "Tyhjä kansio" renders no section at all.
-    expect(
-      sections.map((s) => s.querySelector("h2")?.textContent),
-    ).toEqual(["Muut kuvat", "Lapsuus"]);
+    // A distinct card for the non-empty folder, with its photo count;
+    // the empty folder renders no card at all.
+    const card = screen.getByRole("button", { name: /Lapsuus/ });
+    expect(card.className).toContain("folder-card");
+    expect(card.textContent).toContain("1");
     expect(screen.queryByText("Tyhjä kansio")).toBeNull();
 
-    // Each section's grid contains exactly its own photo.
-    const srcsIn = (section: Element) =>
-      Array.from(section.querySelectorAll("img")).map((i) =>
-        i.getAttribute("src"),
-      );
-    expect(srcsIn(sections[0])).toEqual(["/media/kalevi/k2.jpg"]);
-    expect(srcsIn(sections[1])).toEqual(["/media/kalevi/k1.jpg"]);
+    // Cards come BEFORE the photo grid in the document.
+    const grid = document.querySelector(".photo-grid")!;
+    expect(
+      card.compareDocumentPosition(grid) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+
+    // Only the unsorted photo is visible; the foldered one is not.
+    const srcs = renderedImageSrcs();
+    expect(srcs).toContain("/media/kalevi/k2.jpg");
+    expect(srcs).not.toContain("/media/kalevi/k1.jpg");
+  });
+
+  it("opens a folder on click and returns with the back button", async () => {
+    mockedGetPerson.mockResolvedValue(foldersDetail);
+
+    renderAt("kalevi");
+    await screen.findByRole("heading", { name: "Kalevi Koski" });
+
+    fireEvent.click(screen.getByRole("button", { name: /Lapsuus/ }));
+
+    // Folder view: its heading, ONLY its photo, and no folder cards.
+    expect(await screen.findByRole("heading", { name: "Lapsuus" })).toBeTruthy();
+    expect(renderedImageSrcs()).toEqual(["/media/kalevi/k1.jpg"]);
+    expect(document.querySelector(".folder-card")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "← Takaisin" }));
+
+    // Back to the overview: card row + unsorted photo again.
+    expect(await screen.findByRole("button", { name: /Lapsuus/ })).toBeTruthy();
+    expect(renderedImageSrcs()).toEqual(["/media/kalevi/k2.jpg"]);
   });
 });
 
