@@ -121,17 +121,16 @@
   margin: 0;
 }
 
-/* Uniform tiles: a wider 3:2 box leaves landscape photos more horizontal
-   room while every box stays the same size. Excess is cropped anchored to
-   the TOP of the photo (faces live near the top of portrait shots),
-   horizontally centered. */
+/* Uniform 3:2 tiles that never crop: each photo is shrunk until BOTH
+   dimensions fit inside the box (portrait ones get side bands, extra-wide
+   ones get top/bottom bands). The subtle backdrop fills the leftover space. */
 .photo-grid img {
   display: block;
   width: 100%;
   height: auto;
   aspect-ratio: 3 / 2;
-  object-fit: cover;
-  object-position: center top;
+  object-fit: contain;
+  background: rgba(127, 127, 127, 0.12);
   border-radius: 6px;
 }
 
