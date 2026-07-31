@@ -50,16 +50,29 @@ function AdminPhotoGrid({
   const [files, setFiles] = useState<File[]>([]);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [draft, setDraft] = useState("");
-  const [dragIndex, setDragIndex] = useState<number | null>(null);
-  // Folder id, "none" for the unsort zone, or null when not hovering a target.
-  const [overFolder, setOverFolder] = useState<number | "none" | null>(null);
+  const [dragId, setDragId] = useState<number | null>(null);
+  // Folder id or "back" while a dragged photo hovers that drop target.
+  const [overTarget, setOverTarget] = useState<number | "back" | null>(null);
+  const [openFolderId, setOpenFolderId] = useState<number | null>(null);
   const [addingFolder, setAddingFolder] = useState(false);
   const [folderName, setFolderName] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const folderUi = folders !== undefined && !!onAssignFolder;
-  const folderName_ = (id: number | null | undefined) =>
-    folders?.find((f) => f.id === id)?.name;
+  // Guards against a stale id after the open folder was deleted elsewhere.
+  const openFolder = folderUi
+    ? folders!.find((f) => f.id === openFolderId)
+    : undefined;
+
+  // File-manager view: root shows unfoldered photos, an open folder its own.
+  const shown = !folderUi
+    ? photos
+    : openFolder
+      ? photos.filter((p) => p.folder_id === openFolder.id)
+      : photos.filter((p) => p.folder_id == null);
+
+  const countIn = (folderId: number) =>
+    photos.filter((p) => p.folder_id === folderId).length;
 
   function handleMutationError(err: unknown) {
     const s = (err as AuthError).status;
@@ -96,14 +109,23 @@ function AdminPhotoGrid({
     }
   };
 
-  const handleDropOnPhoto = async (targetIndex: number) => {
-    if (dragIndex === null) return;
-    const from = dragIndex;
-    setDragIndex(null);
-    if (!onReorder || from === targetIndex) return;
-    const ids = photos.map((p) => p.id);
-    const [moved] = ids.splice(from, 1);
-    ids.splice(targetIndex, 0, moved);
+  const handleDropOnPhoto = async (targetId: number) => {
+    const src = dragId;
+    setDragId(null);
+    if (src === null || !onReorder || src === targetId) return;
+    // Reorder within the visible subset, then merge back into the full
+    // list so photos outside this view keep their positions.
+    const visibleIds = shown.map((p) => p.id);
+    const from = visibleIds.indexOf(src);
+    const to = visibleIds.indexOf(targetId);
+    if (from < 0 || to < 0) return;
+    const reordered = [...visibleIds];
+    const [moved] = reordered.splice(from, 1);
+    reordered.splice(to, 0, moved);
+    let vi = 0;
+    const ids = photos.map((p) =>
+      visibleIds.includes(p.id) ? reordered[vi++] : p.id,
+    );
     setError(null);
     try {
       await onReorder(slug, ids);
@@ -114,11 +136,12 @@ function AdminPhotoGrid({
   };
 
   const handleDropOnFolder = async (folderId: number | null) => {
-    setOverFolder(null);
-    if (dragIndex === null || !onAssignFolder) return;
-    const photo = photos[dragIndex];
-    setDragIndex(null);
-    if ((photo.folder_id ?? null) === folderId) return;
+    setOverTarget(null);
+    const src = dragId;
+    setDragId(null);
+    if (src === null || !onAssignFolder) return;
+    const photo = photos.find((p) => p.id === src);
+    if (!photo || (photo.folder_id ?? null) === folderId) return;
     setError(null);
     try {
       await onAssignFolder(slug, photo.id, folderId);
@@ -171,15 +194,15 @@ function AdminPhotoGrid({
     }
   };
 
-  // Shared handlers that make an element accept a dragged photo.
-  const dropTarget = (key: number | "none", folderId: number | null) => ({
+  // Handlers that make an element accept a dragged photo.
+  const dropTarget = (key: number | "back", folderId: number | null) => ({
     onDragOver: (e: React.DragEvent) => {
-      if (dragIndex === null) return;
+      if (dragId === null) return;
       e.preventDefault();
       if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
-      setOverFolder(key);
+      setOverTarget(key);
     },
-    onDragLeave: () => setOverFolder(null),
+    onDragLeave: () => setOverTarget(null),
     onDrop: (e: React.DragEvent) => {
       e.preventDefault();
       handleDropOnFolder(folderId);
@@ -188,15 +211,21 @@ function AdminPhotoGrid({
 
   return (
     <div>
-      {folderUi && (
+      {folderUi && !openFolder && (
         <div className="folder-grid">
           {folders!.map((f) => (
             <div
               key={f.id}
+              role="button"
+              tabIndex={0}
               className={
                 "folder-card folder-drop" +
-                (overFolder === f.id ? " drop-active" : "")
+                (overTarget === f.id ? " drop-active" : "")
               }
+              onClick={() => setOpenFolderId(f.id)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") setOpenFolderId(f.id);
+              }}
               {...dropTarget(f.id, f.id)}
             >
               {onDeleteFolder && (
@@ -204,28 +233,18 @@ function AdminPhotoGrid({
                   type="button"
                   className="folder-delete"
                   aria-label={`${t("admin.action.delete")} ${f.name}`}
-                  onClick={() => handleDeleteFolder(f.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteFolder(f.id);
+                  }}
                 >
                   ×
                 </button>
               )}
               <span className="folder-name">{f.name}</span>
-              <span className="folder-count">
-                {photos.filter((p) => p.folder_id === f.id).length}
-              </span>
+              <span className="folder-count">{countIn(f.id)}</span>
             </div>
           ))}
-          {folders!.length > 0 && (
-            <div
-              className={
-                "folder-card folder-unsort" +
-                (overFolder === "none" ? " drop-active" : "")
-              }
-              {...dropTarget("none", null)}
-            >
-              <span className="folder-name">{t("admin.folder.none")}</span>
-            </div>
-          )}
           {onCreateFolder &&
             (addingFolder ? (
               <div className="folder-card folder-add">
@@ -256,31 +275,54 @@ function AdminPhotoGrid({
             ))}
         </div>
       )}
-      {onReorder && photos.length > 1 && (
+      {folderUi && openFolder && (
+        <div className="folder-grid">
+          <div
+            role="button"
+            tabIndex={0}
+            className={
+              "folder-card folder-unsort" +
+              (overTarget === "back" ? " drop-active" : "")
+            }
+            onClick={() => setOpenFolderId(null)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") setOpenFolderId(null);
+            }}
+            {...dropTarget("back", null)}
+          >
+            <span className="folder-name">← {t("folder.back")}</span>
+          </div>
+          <div className="folder-card folder-drop">
+            <span className="folder-name">{openFolder.name}</span>
+            <span className="folder-count">{countIn(openFolder.id)}</span>
+          </div>
+        </div>
+      )}
+      {onReorder && shown.length > 1 && (
         <p className="drag-hint">{t("admin.photos.dragHint")}</p>
       )}
       <div className="photo-grid">
-        {photos.map((p, i) => (
+        {shown.map((p) => (
           <figure
             key={p.id}
             draggable={!!onReorder || folderUi}
-            className={dragIndex === i ? "dragging" : undefined}
+            className={dragId === p.id ? "dragging" : undefined}
             onDragStart={(e) => {
               // Firefox refuses to start a drag without data attached.
               e.dataTransfer?.setData("text/plain", String(p.id));
               if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
-              setDragIndex(i);
+              setDragId(p.id);
             }}
-            onDragEnd={() => setDragIndex(null)}
+            onDragEnd={() => setDragId(null)}
             onDragOver={(e) => {
-              if (onReorder && dragIndex !== null) {
+              if (onReorder && dragId !== null) {
                 e.preventDefault();
                 if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
               }
             }}
             onDrop={(e) => {
               e.preventDefault();
-              handleDropOnPhoto(i);
+              handleDropOnPhoto(p.id);
             }}
           >
             <img
@@ -295,11 +337,6 @@ function AdminPhotoGrid({
               draggable={false}
             />
             {p.caption && <figcaption>{p.caption}</figcaption>}
-            {folderUi && folderName_(p.folder_id) && (
-              <span className="photo-folder-badge">
-                {folderName_(p.folder_id)}
-              </span>
-            )}
             {editingId === p.id ? (
               <>
                 <input

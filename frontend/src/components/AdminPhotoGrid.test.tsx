@@ -385,7 +385,7 @@ describe("AdminPhotoGrid folder drop targets", () => {
     await waitFor(() => expect(onChanged).toHaveBeenCalledTimes(1));
   });
 
-  it("dropping onto 'Ei kansiota' unassigns with folderId null", async () => {
+  it("root view lists only unfoldered photos; foldered ones live behind their card", () => {
     const onAssignFolder = vi
       .fn<AssignFolderFn>()
       .mockResolvedValue({ ok: true });
@@ -395,16 +395,15 @@ describe("AdminPhotoGrid folder drop targets", () => {
       onAssignFolder,
     });
 
-    fireEvent.dragStart(figures()[0]);
-    const zone = folderCard("Ei kansiota");
-    fireEvent.dragOver(zone);
-    fireEvent.drop(zone);
-
-    await waitFor(() => expect(onAssignFolder).toHaveBeenCalledTimes(1));
-    expect(onAssignFolder).toHaveBeenCalledWith("kalevi", 10, null);
+    // Only k2 (unfoldered) is in the grid; the Lapsuus card shows count 1.
+    const srcs = Array.from(document.querySelectorAll(".photo-grid img")).map(
+      (i) => i.getAttribute("src"),
+    );
+    expect(srcs).toEqual(["/media/kalevi/k2.jpg"]);
+    expect(folderCard("Lapsuus").textContent).toContain("1");
   });
 
-  it("does NOT call the API when dropping a photo onto its current folder", async () => {
+  it("clicking a folder opens it; dragging a photo onto ← moves it back to root", async () => {
     const onAssignFolder = vi
       .fn<AssignFolderFn>()
       .mockResolvedValue({ ok: true });
@@ -414,12 +413,45 @@ describe("AdminPhotoGrid folder drop targets", () => {
       onAssignFolder,
     });
 
-    fireEvent.dragStart(figures()[0]);
-    fireEvent.drop(folderCard("Lapsuus"));
+    fireEvent.click(folderCard("Lapsuus"));
 
-    await waitFor(() => {});
-    expect(onAssignFolder).not.toHaveBeenCalled();
-    expect(onChanged).not.toHaveBeenCalled();
+    // Inside the folder: only its photo (k1) and a back card.
+    const srcs = () =>
+      Array.from(document.querySelectorAll(".photo-grid img")).map((i) =>
+        i.getAttribute("src"),
+      );
+    expect(srcs()).toEqual(["/media/kalevi/k1.jpg"]);
+    const back = folderCard("Takaisin");
+
+    // Drag the photo onto ← Takaisin -> unassign (folder_id null).
+    fireEvent.dragStart(figures()[0]);
+    fireEvent.dragOver(back);
+    fireEvent.drop(back);
+
+    await waitFor(() => expect(onAssignFolder).toHaveBeenCalledTimes(1));
+    expect(onAssignFolder).toHaveBeenCalledWith("kalevi", 10, null);
+    await waitFor(() => expect(onChanged).toHaveBeenCalledTimes(1));
+  });
+
+  it("clicking ← Takaisin returns to the root view", () => {
+    const onAssignFolder = vi
+      .fn<AssignFolderFn>()
+      .mockResolvedValue({ ok: true });
+    renderGrid({
+      photos: [{ ...photos[0], folder_id: 5 }, photos[1]],
+      folders,
+      onAssignFolder,
+    });
+
+    fireEvent.click(folderCard("Lapsuus"));
+    fireEvent.click(folderCard("Takaisin"));
+
+    // Root again: folder cards + the unfoldered photo.
+    expect(folderCard("Lapsuus")).toBeTruthy();
+    const srcs = Array.from(document.querySelectorAll(".photo-grid img")).map(
+      (i) => i.getAttribute("src"),
+    );
+    expect(srcs).toEqual(["/media/kalevi/k2.jpg"]);
   });
 
   it("the + card opens a naming input and creates the trimmed folder", async () => {
@@ -469,19 +501,4 @@ describe("AdminPhotoGrid folder drop targets", () => {
     await waitFor(() => expect(onChanged).toHaveBeenCalledTimes(1));
   });
 
-  it("shows the folder name as a badge on assigned photos", () => {
-    const onAssignFolder = vi
-      .fn<AssignFolderFn>()
-      .mockResolvedValue({ ok: true });
-    renderGrid({
-      photos: [{ ...photos[0], folder_id: 5 }, photos[1]],
-      folders,
-      onAssignFolder,
-    });
-
-    const badges = Array.from(
-      document.querySelectorAll(".photo-folder-badge"),
-    ).map((b) => b.textContent);
-    expect(badges).toEqual(["Lapsuus"]);
-  });
 });

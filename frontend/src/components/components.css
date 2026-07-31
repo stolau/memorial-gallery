@@ -134,10 +134,12 @@
   border-radius: 6px;
 }
 
-/* Folder cards on a person page: a distinct row above the photos */
+/* Folder cards on a person page: a distinct row above the photos.
+   Grid keeps several compact cards per row and scales them down on
+   small screens instead of stacking one per row. */
 .folder-grid {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
   gap: 1rem;
   margin: 1.5rem 0 0.5rem;
 }
@@ -146,15 +148,21 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 0.35rem;
-  min-width: 120px;
-  padding: 1rem 1.25rem;
+  min-width: 0;
+  padding: 0.9rem 0.75rem;
   font: inherit;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--bg);
   color: var(--accent);
   cursor: pointer;
+}
+
+.folder-card svg {
+  width: 34px;
+  height: auto;
 }
 
 .folder-card:hover {
@@ -164,6 +172,9 @@
 .folder-name {
   font-weight: 500;
   color: var(--text-h);
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  text-align: center;
 }
 
 .folder-count {
@@ -259,7 +270,9 @@ button.folder-add {
 
 .folder-add input {
   font: inherit;
-  width: 9rem;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   padding: 0.3rem 0.45rem;
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -278,15 +291,10 @@ button.folder-add {
   cursor: pointer;
 }
 
-/* Small badge showing which folder a photo belongs to (edit mode) */
-.photo-folder-badge {
-  display: inline-block;
-  margin-top: 0.4rem;
-  font-size: 0.75rem;
-  padding: 0.1rem 0.5rem;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  color: var(--text);
+/* Folder cards used as buttons (open on click) keep the pointer cursor */
+.folder-drop[role="button"],
+.folder-unsort[role="button"] {
+  cursor: pointer;
 }
 
 .photo-grid figcaption {
@@ -672,5 +680,23 @@ button.folder-add {
   }
   .event-card-img {
     height: 160px;
+  }
+  /* Phones: at least 3 folder cards per row, scaled to fit */
+  .folder-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+  }
+  .folder-card {
+    padding: 0.55rem 0.4rem;
+    gap: 0.2rem;
+  }
+  .folder-card svg {
+    width: 26px;
+  }
+  .folder-name {
+    font-size: 0.85rem;
+  }
+  .folder-count {
+    font-size: 0.75rem;
   }
 }
