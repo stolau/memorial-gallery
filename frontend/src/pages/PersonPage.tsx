@@ -80,7 +80,9 @@ function FolderedPhotos({
               }}
             >
               <FolderIcon />
-              <span className="folder-name">{f.name}</span>
+              <span className="folder-name" title={f.name}>
+                {f.name}
+              </span>
               <span className="folder-count">{inFolder(f.id).length}</span>
             </button>
           ))}

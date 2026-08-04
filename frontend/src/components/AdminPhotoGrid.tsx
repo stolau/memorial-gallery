@@ -281,7 +281,9 @@ function AdminPhotoGrid({
                   ×
                 </button>
               )}
-              <span className="folder-name">{f.name}</span>
+              <span className="folder-name" title={f.name}>
+                {f.name}
+              </span>
               <span className="folder-count">{countIn(f.id)}</span>
             </div>
           ))}
@@ -333,7 +335,9 @@ function AdminPhotoGrid({
             <span className="folder-name">← {t("folder.back")}</span>
           </div>
           <div className="folder-card folder-drop">
-            <span className="folder-name">{openFolder.name}</span>
+            <span className="folder-name" title={openFolder.name}>
+              {openFolder.name}
+            </span>
             <span className="folder-count">{countIn(openFolder.id)}</span>
           </div>
         </div>

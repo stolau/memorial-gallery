@@ -68,6 +68,19 @@
   padding: 1.5rem;
 }
 
+/* Free-typed text (names, bios, descriptions, captions) must wrap inside
+   its box rather than widen the page, even as one unbroken string. */
+.page-main h1,
+.page-main p,
+.page-main li,
+.photo-grid figcaption,
+.lightbox-caption,
+.portrait-dialog,
+.person-facts dd,
+.event-card-meta {
+  overflow-wrap: anywhere;
+}
+
 /* People grid + cards */
 .people-grid {
   display: grid;
@@ -98,6 +111,9 @@
 .person-card-name {
   padding: 0.75rem 1rem;
   font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Profile picture on a person detail page */
@@ -169,11 +185,15 @@
   border-color: var(--accent-border);
 }
 
+/* Names stay on ONE line: too-long text is cut with an ellipsis instead of
+   wrapping and stretching the card (full name in the title tooltip). */
 .folder-name {
   font-weight: 500;
   color: var(--text-h);
   max-width: 100%;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   text-align: center;
 }
 
@@ -341,6 +361,9 @@ button.folder-add {
 .event-card-name {
   padding: 0.75rem 1rem;
   font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .event-card-meta {
