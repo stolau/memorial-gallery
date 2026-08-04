@@ -205,16 +205,22 @@ describe("PersonPage", () => {
     expect(card.textContent).toContain("1");
     expect(screen.queryByText("Tyhjä kansio")).toBeNull();
 
+    // The card shows its first photo as a cover thumbnail.
+    const thumb = card.querySelector("img.folder-thumb");
+    expect(thumb?.getAttribute("src")).toBe("/media/kalevi/k1.jpg");
+
     // Cards come BEFORE the photo grid in the document.
     const grid = document.querySelector(".photo-grid")!;
     expect(
       card.compareDocumentPosition(grid) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
 
-    // Only the unsorted photo is visible; the foldered one is not.
-    const srcs = renderedImageSrcs();
-    expect(srcs).toContain("/media/kalevi/k2.jpg");
-    expect(srcs).not.toContain("/media/kalevi/k1.jpg");
+    // The photo GRID holds only the unsorted photo; the foldered one
+    // appears solely as the card's thumbnail.
+    const gridSrcs = Array.from(grid.querySelectorAll("img")).map((i) =>
+      i.getAttribute("src"),
+    );
+    expect(gridSrcs).toEqual(["/media/kalevi/k2.jpg"]);
   });
 
   it("opens a folder on click and returns with the back button", async () => {
@@ -234,7 +240,10 @@ describe("PersonPage", () => {
 
     // Back to the overview: card row + unsorted photo again.
     expect(await screen.findByRole("button", { name: /Lapsuus/ })).toBeTruthy();
-    expect(renderedImageSrcs()).toEqual(["/media/kalevi/k2.jpg"]);
+    const gridSrcs = Array.from(
+      document.querySelectorAll(".photo-grid img"),
+    ).map((i) => i.getAttribute("src"));
+    expect(gridSrcs).toEqual(["/media/kalevi/k2.jpg"]);
   });
 });
 

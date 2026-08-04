@@ -7,22 +7,9 @@ import PhotoGrid from "../components/PhotoGrid";
 import PortraitDialog from "../components/PortraitDialog";
 import { useT } from "../i18n/LangContext";
 
-function FolderIcon() {
-  return (
-    <svg
-      width="44"
-      height="36"
-      viewBox="0 0 24 20"
-      fill="currentColor"
-      aria-hidden="true"
-    >
-      <path d="M1 3a2 2 0 0 1 2-2h5.5l2 2.5H21a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V3z" />
-    </svg>
-  );
-}
-
-/* Folders render as distinct cards in a row above the photos; clicking one
-   shows only that folder's photos (?folder=<id>, so back/deep links work).
+/* Folders render as distinct cards in a row above the photos — cover
+   thumbnail (the folder's first photo) over the name; clicking one shows
+   only that folder's photos (?folder=<id>, so back/deep links work).
    Photos without a folder stay below the cards. No folders -> flat grid. */
 function FolderedPhotos({
   photos,
@@ -69,23 +56,32 @@ function FolderedPhotos({
     <>
       {nonEmpty.length > 0 && (
         <div className="folder-grid">
-          {nonEmpty.map((f) => (
-            <button
-              key={f.id}
-              type="button"
-              className="folder-card"
-              onClick={() => {
-                searchParams.set("folder", String(f.id));
-                setSearchParams(searchParams);
-              }}
-            >
-              <FolderIcon />
-              <span className="folder-name" title={f.name}>
-                {f.name}
-              </span>
-              <span className="folder-count">{inFolder(f.id).length}</span>
-            </button>
-          ))}
+          {nonEmpty.map((f) => {
+            const contents = inFolder(f.id);
+            return (
+              <button
+                key={f.id}
+                type="button"
+                className="folder-card"
+                onClick={() => {
+                  searchParams.set("folder", String(f.id));
+                  setSearchParams(searchParams);
+                }}
+              >
+                <img
+                  className="folder-thumb"
+                  src={contents[0].url}
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                />
+                <span className="folder-name" title={f.name}>
+                  {f.name}
+                </span>
+                <span className="folder-count">{contents.length}</span>
+              </button>
+            );
+          })}
         </div>
       )}
       {unsorted.length > 0 && <PhotoGrid photos={unsorted} />}

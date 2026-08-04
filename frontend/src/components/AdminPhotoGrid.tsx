@@ -80,6 +80,10 @@ function AdminPhotoGrid({
   const countIn = (folderId: number) =>
     photos.filter((p) => p.folder_id === folderId).length;
 
+  // Folder cover: the first photo in the folder (photos arrive ordered).
+  const coverOf = (folderId: number) =>
+    photos.find((p) => p.folder_id === folderId);
+
   function handleMutationError(err: unknown) {
     const s = (err as AuthError).status;
     if (s === 401) {
@@ -280,6 +284,16 @@ function AdminPhotoGrid({
                 >
                   ×
                 </button>
+              )}
+              {coverOf(f.id) && (
+                <img
+                  className="folder-thumb"
+                  src={coverOf(f.id)!.url}
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                  draggable={false}
+                />
               )}
               <span className="folder-name" title={f.name}>
                 {f.name}
