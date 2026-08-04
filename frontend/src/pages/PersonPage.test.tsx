@@ -159,6 +159,29 @@ describe("PersonPage", () => {
     expect(await screen.findByRole("dialog")).toBeTruthy();
   });
 
+  it("QR entry shows the info ONLY once: closing it and opening a folder does not re-trigger it", async () => {
+    mockedGetPerson.mockResolvedValue({
+      ...detail,
+      photos: [{ ...detail.photos[0], folder_id: 1 }, detail.photos[1]],
+      folders: [{ id: 1, name: "Lapsuus" }],
+    });
+
+    renderAtEntry("/kalevi?showinfo=1");
+
+    // Dialog auto-opens once from the QR link...
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog).toBeTruthy();
+
+    // ...the user closes it...
+    fireEvent.click(within(dialog).getByRole("button", { name: "Sulje" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+
+    // ...and navigates into a folder: the info must NOT pop up again.
+    fireEvent.click(screen.getByRole("button", { name: /Lapsuus/ }));
+    expect(await screen.findByRole("heading", { name: "Lapsuus" })).toBeTruthy();
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
   it("falsifiability twin B: does NOT auto-open the dialog without ?showinfo=1", async () => {
     mockedGetPerson.mockResolvedValue(detail);
 

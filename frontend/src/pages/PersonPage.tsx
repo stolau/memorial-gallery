@@ -92,7 +92,7 @@ function FolderedPhotos({
 function PersonPage() {
   const t = useT();
   const { slug } = useParams();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [detail, setDetail] = useState<PersonDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [portraitOpen, setPortraitOpen] = useState(false);
@@ -107,10 +107,16 @@ function PersonPage() {
   }, [slug]);
 
   useEffect(() => {
+    // ?showinfo=1 (the QR-code entry) opens the info dialog ONCE, then is
+    // dropped from the URL so later navigation (e.g. opening a folder)
+    // doesn't re-trigger it. replace: no extra back-button history entry.
     if (detail && searchParams.get("showinfo") === "1") {
       setPortraitOpen(true);
+      const next = new URLSearchParams(searchParams);
+      next.delete("showinfo");
+      setSearchParams(next, { replace: true });
     }
-  }, [detail, searchParams]);
+  }, [detail, searchParams, setSearchParams]);
 
   return (
     <Layout>
