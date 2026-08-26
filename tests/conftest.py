@@ -71,6 +71,12 @@ def _seed(media_root: Path) -> None:
     (media_root / "events" / "party" / "e-bbbb.jpg").write_bytes(JPEG_BYTES)
     models.add_event_photo(party_id, "e-bbbb.jpg")
 
+    # Collection 'suku' with one photo.
+    suku_id = models.create_collection("suku", "Kaijankosken suku")
+    (media_root / "collections" / "suku").mkdir(parents=True, exist_ok=True)
+    (media_root / "collections" / "suku" / "c-dddd.jpg").write_bytes(JPEG_BYTES)
+    models.add_collection_photo(suku_id, "c-dddd.jpg")
+
     # Edge case: a person whose slug is literally 'events', with a SINGLE-segment
     # filename. /media/events/cover.jpg has only two path segments after /media,
     # so it cannot match the three-segment media.event rule and correctly serves

@@ -17,17 +17,16 @@ def attach_profile_url(person: dict) -> dict:
     return person
 
 
-def attach_cover_url(event: dict) -> dict:
-    fn = event.get("cover_filename")
-    event["cover_url"] = (
-        get_storage().event_photo_url(event["slug"], fn) if fn else None
+def attach_cover_url(row: dict, *, prefix: str = "events") -> dict:
+    fn = row.get("cover_filename")
+    row["cover_url"] = (
+        get_storage().photo_url(prefix, row["slug"], fn) if fn else None
     )
-    return event
+    return row
 
 
-def attach_photo_urls(slug: str, photos: list[dict], *, event: bool = False) -> list[dict]:
+def attach_photo_urls(slug: str, photos: list[dict], *, prefix: str = "") -> list[dict]:
     storage = get_storage()
-    photo_url = storage.event_photo_url if event else storage.person_photo_url
     for ph in photos:
-        ph["url"] = photo_url(slug, ph["filename"])
+        ph["url"] = storage.photo_url(prefix, slug, ph["filename"])
     return photos

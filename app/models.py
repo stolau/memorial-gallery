@@ -345,3 +345,240 @@ def reorder_event_photos(event_id: int, ids: list[int]) -> bool:
     )
     db.commit()
     return True
+
+
+# --- Collections ----------------------------------------------------------
+
+COLLECTION_FIELDS = ("id", "slug", "name", "info", "profile_image")
+EDITABLE_COLLECTION_FIELDS = frozenset(COLLECTION_FIELDS) - {"id", "slug"}
+
+
+def list_collections() -> list[dict]:
+    rows = get_db().execute(
+        "SELECT id, slug, name, info, profile_image, "
+        "(SELECT filename FROM collection_photos cp WHERE cp.collection_id = collections.id "
+        " ORDER BY cp.uploaded_at DESC, cp.id DESC LIMIT 1) AS cover_filename "
+        "FROM collections ORDER BY created_at DESC"
+    ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def get_collection(slug: str) -> dict | None:
+    row = get_db().execute(
+        f"SELECT {', '.join(COLLECTION_FIELDS)} FROM collections WHERE slug = ?",
+        (slug,),
+    ).fetchone()
+    return dict(row) if row else None
+
+
+def create_collection(slug: str, name: str, **fields) -> int:
+    cols = ["slug", "name"]
+    values = [slug, name]
+    for k, v in fields.items():
+        if k in EDITABLE_COLLECTION_FIELDS:
+            cols.append(k)
+            values.append(v)
+    placeholders = ", ".join(["?"] * len(values))
+    db = get_db()
+    cur = db.execute(
+        f"INSERT INTO collections ({', '.join(cols)}) VALUES ({placeholders})",
+        values,
+    )
+    db.commit()
+    return cur.lastrowid
+
+
+def update_collection(slug: str, **fields) -> None:
+    updates = {k: v for k, v in fields.items() if k in EDITABLE_COLLECTION_FIELDS}
+    if not updates:
+        return
+    set_clause = ", ".join(f"{k} = ?" for k in updates)
+    values = list(updates.values()) + [slug]
+    db = get_db()
+    db.execute(f"UPDATE collections SET {set_clause} WHERE slug = ?", values)
+    db.commit()
+
+
+def delete_collection(collection_id: int) -> None:
+    db = get_db()
+    db.execute("DELETE FROM collections WHERE id = ?", (collection_id,))
+    db.commit()
+
+
+def list_collection_photos(collection_id: int) -> list[dict]:
+    rows = get_db().execute(
+        "SELECT id, filename, caption, folder_id, position, uploaded_at "
+        "FROM collection_photos WHERE collection_id = ? "
+        "ORDER BY position, uploaded_at DESC, id DESC",
+        (collection_id,),
+    ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def count_collection_photos(collection_id: int) -> int:
+    return get_db().execute(
+        "SELECT count(*) FROM collection_photos WHERE collection_id = ?", (collection_id,)
+    ).fetchone()[0]
+
+
+def add_collection_photo(collection_id: int, filename: str, caption: str | None = None) -> int:
+    db = get_db()
+    cur = db.execute(
+        "INSERT INTO collection_photos (collection_id, filename, caption, position) "
+        "VALUES (?, ?, ?, (SELECT COALESCE(MAX(position), 0) + 1 FROM collection_photos WHERE collection_id = ?))",
+        (collection_id, filename, caption, collection_id),
+    )
+    db.commit()
+    return cur.lastrowid
+
+
+def delete_collection_photo(photo_id: int, slug: str) -> str | None:
+    db = get_db()
+    row = db.execute(
+        "SELECT cp.filename FROM collection_photos cp JOIN collections c ON c.id = cp.collection_id "
+        "WHERE cp.id = ? AND c.slug = ?",
+        (photo_id, slug),
+    ).fetchone()
+    if row is None:
+        return None
+    db.execute("DELETE FROM collection_photos WHERE id = ?", (photo_id,))
+    db.commit()
+    return row["filename"]
+
+
+def update_collection_photo_caption(photo_id: int, slug: str, caption: str | None) -> bool:
+    db = get_db()
+    row = db.execute(
+        "SELECT cp.id FROM collection_photos cp JOIN collections c ON c.id = cp.collection_id "
+        "WHERE cp.id = ? AND c.slug = ?",
+        (photo_id, slug),
+    ).fetchone()
+    if row is None:
+        return False
+    db.execute("UPDATE collection_photos SET caption = ? WHERE id = ?", (caption, photo_id))
+    db.commit()
+    return True
+
+
+def reorder_collection_photos(collection_id: int, ids: list[int]) -> bool:
+    """Twin of reorder_photos for collection galleries."""
+    db = get_db()
+    current = [
+        r["id"]
+        for r in db.execute(
+            "SELECT id FROM collection_photos WHERE collection_id = ?", (collection_id,)
+        ).fetchall()
+    ]
+    if sorted(ids) != sorted(current):
+        return False
+    db.executemany(
+        "UPDATE collection_photos SET position = ? WHERE id = ?",
+        [(pos, photo_id) for pos, photo_id in enumerate(ids, start=1)],
+    )
+    db.commit()
+    return True
+
+
+def list_collection_folders(collection_id: int) -> list[dict]:
+    rows = get_db().execute(
+        "SELECT id, name FROM collection_folders WHERE collection_id = ? "
+        "ORDER BY position, name COLLATE NOCASE, id",
+        (collection_id,),
+    ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def create_collection_folder(collection_id: int, name: str) -> int:
+    db = get_db()
+    cur = db.execute(
+        "INSERT INTO collection_folders (collection_id, name, position) "
+        "VALUES (?, ?, (SELECT COALESCE(MAX(position), 0) + 1 FROM collection_folders WHERE collection_id = ?))",
+        (collection_id, name, collection_id),
+    )
+    db.commit()
+    return cur.lastrowid
+
+
+def reorder_collection_folders(collection_id: int, ids: list[int]) -> bool:
+    """Twin of reorder_folders for a collection's folders."""
+    db = get_db()
+    current = [
+        r["id"]
+        for r in db.execute(
+            "SELECT id FROM collection_folders WHERE collection_id = ?", (collection_id,)
+        ).fetchall()
+    ]
+    if sorted(ids) != sorted(current):
+        return False
+    db.executemany(
+        "UPDATE collection_folders SET position = ? WHERE id = ?",
+        [(pos, folder_id) for pos, folder_id in enumerate(ids, start=1)],
+    )
+    db.commit()
+    return True
+
+
+def delete_collection_folder(folder_id: int, slug: str) -> bool:
+    db = get_db()
+    row = db.execute(
+        "SELECT f.id FROM collection_folders f JOIN collections c ON c.id = f.collection_id "
+        "WHERE f.id = ? AND c.slug = ?",
+        (folder_id, slug),
+    ).fetchone()
+    if row is None:
+        return False
+    # collection_photos.folder_id has ON DELETE SET NULL: photos become unsorted.
+    db.execute("DELETE FROM collection_folders WHERE id = ?", (folder_id,))
+    db.commit()
+    return True
+
+
+def set_collection_photo_folder(photo_id: int, slug: str, folder_id: int | None) -> bool:
+    db = get_db()
+    photo = db.execute(
+        "SELECT cp.id, cp.collection_id FROM collection_photos cp "
+        "JOIN collections c ON c.id = cp.collection_id "
+        "WHERE cp.id = ? AND c.slug = ?",
+        (photo_id, slug),
+    ).fetchone()
+    if photo is None:
+        return False
+    if folder_id is not None:
+        folder = db.execute(
+            "SELECT id FROM collection_folders WHERE id = ? AND collection_id = ?",
+            (folder_id, photo["collection_id"]),
+        ).fetchone()
+        if folder is None:
+            return False
+    db.execute("UPDATE collection_photos SET folder_id = ? WHERE id = ?", (folder_id, photo_id))
+    db.commit()
+    return True
+
+
+# --- Site settings --------------------------------------------------------
+
+SETTINGS_FIELDS = ("contact_name", "contact_email", "contact_phone")
+
+
+def get_settings() -> dict:
+    row = get_db().execute(
+        f"SELECT {', '.join(SETTINGS_FIELDS)} FROM site_settings WHERE id = 1"
+    ).fetchone()
+    return dict(row) if row else {k: None for k in SETTINGS_FIELDS}
+
+
+def update_settings(**fields) -> None:
+    updates = {k: v for k, v in fields.items() if k in SETTINGS_FIELDS}
+    if not updates:
+        return
+    cols = list(updates.keys())
+    values = list(updates.values())
+    placeholders = ", ".join(["?"] * len(cols))
+    set_clause = ", ".join(f"{k} = excluded.{k}" for k in cols)
+    db = get_db()
+    db.execute(
+        f"INSERT INTO site_settings (id, {', '.join(cols)}) VALUES (1, {placeholders}) "
+        f"ON CONFLICT(id) DO UPDATE SET {set_clause}",
+        values,
+    )
+    db.commit()

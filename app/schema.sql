@@ -54,3 +54,42 @@ CREATE TABLE IF NOT EXISTS event_photos (
 );
 
 CREATE INDEX IF NOT EXISTS idx_event_photos_event ON event_photos(event_id, uploaded_at DESC);
+
+CREATE TABLE IF NOT EXISTS collections (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    slug           TEXT NOT NULL UNIQUE,
+    name           TEXT NOT NULL,
+    info           TEXT,
+    profile_image  TEXT,
+    cover_photo_id INTEGER,
+    created_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS collection_folders (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    collection_id  INTEGER NOT NULL REFERENCES collections(id) ON DELETE CASCADE,
+    name           TEXT NOT NULL,
+    position       INTEGER NOT NULL DEFAULT 0,
+    created_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_collection_folders_collection ON collection_folders(collection_id);
+
+CREATE TABLE IF NOT EXISTS collection_photos (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    collection_id  INTEGER NOT NULL REFERENCES collections(id) ON DELETE CASCADE,
+    filename       TEXT NOT NULL,
+    caption        TEXT,
+    folder_id      INTEGER REFERENCES collection_folders(id) ON DELETE SET NULL,
+    position       INTEGER NOT NULL DEFAULT 0,
+    uploaded_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_collection_photos_collection ON collection_photos(collection_id, uploaded_at DESC);
+
+CREATE TABLE IF NOT EXISTS site_settings (
+    id             INTEGER PRIMARY KEY,
+    contact_name   TEXT,
+    contact_email  TEXT,
+    contact_phone  TEXT
+);
