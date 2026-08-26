@@ -81,6 +81,13 @@
   overflow-wrap: anywhere;
 }
 
+/* Info text (bio, description, collection info) rendered by <Paragraphs>:
+   blank lines already split <p> blocks, so keep single newlines inside a
+   block visible instead of collapsing them to spaces. */
+.info-paragraph {
+  white-space: pre-line;
+}
+
 /* People grid + cards */
 .people-grid {
   display: grid;
