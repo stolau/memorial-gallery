@@ -3,10 +3,13 @@ import PeopleIndex from './pages/PeopleIndex'
 import PersonPage from './pages/PersonPage'
 import EventsIndex from './pages/EventsIndex'
 import EventPage from './pages/EventPage'
+import CollectionsIndex from './pages/CollectionsIndex'
+import CollectionPage from './pages/CollectionPage'
 import Login from './pages/Login'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import PersonForm from './pages/admin/PersonForm'
 import EventForm from './pages/admin/EventForm'
+import CollectionForm from './pages/admin/CollectionForm'
 import ProtectedRoute from './auth/ProtectedRoute'
 import './App.css'
 
@@ -16,6 +19,8 @@ function App() {
       <Route path="/" element={<PeopleIndex />} />
       <Route path="/events" element={<EventsIndex />} />
       <Route path="/events/:slug" element={<EventPage />} />
+      <Route path="/collections" element={<CollectionsIndex />} />
+      <Route path="/collections/:slug" element={<CollectionPage />} />
       <Route path="/login" element={<Login />} />
       <Route
         path="/admin"
@@ -54,6 +59,22 @@ function App() {
         element={
           <ProtectedRoute>
             <EventForm />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/collections/new"
+        element={
+          <ProtectedRoute>
+            <CollectionForm />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/collections/:slug/edit"
+        element={
+          <ProtectedRoute>
+            <CollectionForm />
           </ProtectedRoute>
         }
       />
