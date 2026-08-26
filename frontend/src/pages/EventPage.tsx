@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { getEvent } from "../api/client";
 import type { EventDetail } from "../api/types";
 import Layout from "../components/Layout";
+import Paragraphs from "../components/Paragraphs";
 import PhotoGrid from "../components/PhotoGrid";
 import { useT } from "../i18n/LangContext";
 
@@ -28,7 +29,9 @@ function EventPage() {
       {detail && (
         <>
           <h1>{detail.event.name}</h1>
-          {detail.event.description && <p>{detail.event.description}</p>}
+          {detail.event.description && (
+            <Paragraphs text={detail.event.description} />
+          )}
           <ul>
             {detail.event.event_time && (
               <li>{t("event.time")}: {detail.event.event_time}</li>

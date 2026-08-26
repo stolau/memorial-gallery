@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import type { PersonDetailData } from "../api/types";
 import { useT } from "../i18n/LangContext";
+import Paragraphs from "./Paragraphs";
 import PersonFacts from "./PersonFacts";
 
 function PortraitDialog({
@@ -38,7 +39,7 @@ function PortraitDialog({
         )}
         <h2>{person.display_name}</h2>
         <PersonFacts person={person} />
-        {person.bio && <p>{person.bio}</p>}
+        {person.bio && <Paragraphs text={person.bio} />}
         <button
           type="button"
           aria-label={t("lightbox.close")}
