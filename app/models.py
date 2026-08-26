@@ -26,6 +26,14 @@ def get_person(slug: str) -> dict | None:
     return dict(row) if row else None
 
 
+def get_person_by_id(person_id: int) -> dict | None:
+    row = get_db().execute(
+        f"SELECT {', '.join(PERSON_FIELDS)} FROM people WHERE id = ?",
+        (person_id,),
+    ).fetchone()
+    return dict(row) if row else None
+
+
 def create_person(slug: str, display_name: str, **fields) -> int:
     cols = ["slug", "display_name"]
     values = [slug, display_name]
@@ -217,13 +225,13 @@ def set_photo_folder(photo_id: int, slug: str, folder_id: int | None) -> bool:
 
 # --- Events ---------------------------------------------------------------
 
-EVENT_FIELDS = ("id", "slug", "name", "description", "event_time", "place")
+EVENT_FIELDS = ("id", "slug", "name", "description", "event_time", "place", "kind")
 EDITABLE_EVENT_FIELDS = frozenset(EVENT_FIELDS) - {"id", "slug"}
 
 
 def list_events() -> list[dict]:
     rows = get_db().execute(
-        "SELECT id, slug, name, description, event_time, place, "
+        "SELECT id, slug, name, description, event_time, place, kind, "
         "(SELECT filename FROM event_photos ep WHERE ep.event_id = events.id "
         " ORDER BY ep.uploaded_at DESC, ep.id DESC LIMIT 1) AS cover_filename "
         "FROM events ORDER BY created_at DESC"
@@ -555,30 +563,199 @@ def set_collection_photo_folder(photo_id: int, slug: str, folder_id: int | None)
     return True
 
 
-# --- Site settings --------------------------------------------------------
+# --- Contacts -------------------------------------------------------------
 
-SETTINGS_FIELDS = ("contact_name", "contact_email", "contact_phone")
+CONTACT_FIELDS = ("id", "position", "name", "role", "phone", "email")
+EDITABLE_CONTACT_FIELDS = frozenset(("name", "role", "phone", "email"))
 
 
-def get_settings() -> dict:
+def list_contacts() -> list[dict]:
+    rows = get_db().execute(
+        f"SELECT {', '.join(CONTACT_FIELDS)} FROM contacts ORDER BY position, id"
+    ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def get_contact(contact_id: int) -> dict | None:
     row = get_db().execute(
-        f"SELECT {', '.join(SETTINGS_FIELDS)} FROM site_settings WHERE id = 1"
+        f"SELECT {', '.join(CONTACT_FIELDS)} FROM contacts WHERE id = ?",
+        (contact_id,),
     ).fetchone()
-    return dict(row) if row else {k: None for k in SETTINGS_FIELDS}
+    return dict(row) if row else None
 
 
-def update_settings(**fields) -> None:
-    updates = {k: v for k, v in fields.items() if k in SETTINGS_FIELDS}
-    if not updates:
-        return
-    cols = list(updates.keys())
-    values = list(updates.values())
-    placeholders = ", ".join(["?"] * len(cols))
-    set_clause = ", ".join(f"{k} = excluded.{k}" for k in cols)
+def create_contact(name: str, **fields) -> int:
+    cols = ["name"]
+    values = [name]
+    for k, v in fields.items():
+        if k in EDITABLE_CONTACT_FIELDS and k != "name":
+            cols.append(k)
+            values.append(v)
+    placeholders = ", ".join(["?"] * len(values))
     db = get_db()
-    db.execute(
-        f"INSERT INTO site_settings (id, {', '.join(cols)}) VALUES (1, {placeholders}) "
-        f"ON CONFLICT(id) DO UPDATE SET {set_clause}",
+    cur = db.execute(
+        f"INSERT INTO contacts ({', '.join(cols)}, position) "
+        f"VALUES ({placeholders}, (SELECT COALESCE(MAX(position), 0) + 1 FROM contacts))",
         values,
     )
     db.commit()
+    return cur.lastrowid
+
+
+def update_contact(contact_id: int, **fields) -> bool:
+    updates = {k: v for k, v in fields.items() if k in EDITABLE_CONTACT_FIELDS}
+    if not updates:
+        return get_contact(contact_id) is not None
+    set_clause = ", ".join(f"{k} = ?" for k in updates)
+    values = list(updates.values()) + [contact_id]
+    db = get_db()
+    cur = db.execute(f"UPDATE contacts SET {set_clause} WHERE id = ?", values)
+    db.commit()
+    return cur.rowcount > 0
+
+
+def delete_contact(contact_id: int) -> bool:
+    db = get_db()
+    cur = db.execute("DELETE FROM contacts WHERE id = ?", (contact_id,))
+    db.commit()
+    return cur.rowcount > 0
+
+
+def reorder_contacts(ids: list[int]) -> bool:
+    """Twin of reorder_folders for the global contacts list."""
+    db = get_db()
+    current = [r["id"] for r in db.execute("SELECT id FROM contacts").fetchall()]
+    if sorted(ids) != sorted(current):
+        return False
+    db.executemany(
+        "UPDATE contacts SET position = ? WHERE id = ?",
+        [(pos, contact_id) for pos, contact_id in enumerate(ids, start=1)],
+    )
+    db.commit()
+    return True
+
+
+# --- Family lines ---------------------------------------------------------
+
+FAMILY_LINE_FIELDS = ("id", "slug", "name", "year_range", "note", "position")
+EDITABLE_FAMILY_LINE_FIELDS = frozenset(("name", "year_range", "note"))
+
+
+def _family_line_members(family_line_id: int) -> list[dict]:
+    rows = get_db().execute(
+        "SELECT p.slug, p.display_name FROM family_line_members m "
+        "JOIN people p ON p.id = m.person_id "
+        "WHERE m.family_line_id = ? ORDER BY m.position, p.display_name",
+        (family_line_id,),
+    ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def list_family_lines() -> list[dict]:
+    rows = get_db().execute(
+        f"SELECT {', '.join(FAMILY_LINE_FIELDS)} FROM family_lines "
+        "ORDER BY position, id"
+    ).fetchall()
+    result = []
+    for r in rows:
+        line = dict(r)
+        line["members"] = _family_line_members(line["id"])
+        result.append(line)
+    return result
+
+
+def get_family_line(slug: str) -> dict | None:
+    row = get_db().execute(
+        f"SELECT {', '.join(FAMILY_LINE_FIELDS)} FROM family_lines WHERE slug = ?",
+        (slug,),
+    ).fetchone()
+    if row is None:
+        return None
+    line = dict(row)
+    line["members"] = _family_line_members(line["id"])
+    return line
+
+
+def create_family_line(slug: str, name: str, **fields) -> int:
+    cols = ["slug", "name"]
+    values = [slug, name]
+    for k, v in fields.items():
+        if k in EDITABLE_FAMILY_LINE_FIELDS and k != "name":
+            cols.append(k)
+            values.append(v)
+    placeholders = ", ".join(["?"] * len(values))
+    db = get_db()
+    cur = db.execute(
+        f"INSERT INTO family_lines ({', '.join(cols)}, position) "
+        f"VALUES ({placeholders}, (SELECT COALESCE(MAX(position), 0) + 1 FROM family_lines))",
+        values,
+    )
+    db.commit()
+    return cur.lastrowid
+
+
+def update_family_line(slug: str, **fields) -> None:
+    updates = {k: v for k, v in fields.items() if k in EDITABLE_FAMILY_LINE_FIELDS}
+    if not updates:
+        return
+    set_clause = ", ".join(f"{k} = ?" for k in updates)
+    values = list(updates.values()) + [slug]
+    db = get_db()
+    db.execute(f"UPDATE family_lines SET {set_clause} WHERE slug = ?", values)
+    db.commit()
+
+
+def delete_family_line(family_line_id: int) -> None:
+    db = get_db()
+    db.execute("DELETE FROM family_lines WHERE id = ?", (family_line_id,))
+    db.commit()
+
+
+def add_family_line_member(family_line_id: int, person_id: int) -> bool:
+    """Add a person to a family line at the end; idempotent on duplicates."""
+    db = get_db()
+    exists = db.execute(
+        "SELECT 1 FROM family_line_members WHERE family_line_id = ? AND person_id = ?",
+        (family_line_id, person_id),
+    ).fetchone()
+    if exists:
+        return False
+    db.execute(
+        "INSERT INTO family_line_members (family_line_id, person_id, position) "
+        "VALUES (?, ?, (SELECT COALESCE(MAX(position), 0) + 1 "
+        "FROM family_line_members WHERE family_line_id = ?))",
+        (family_line_id, person_id, family_line_id),
+    )
+    db.commit()
+    return True
+
+
+def remove_family_line_member(family_line_id: int, person_id: int) -> bool:
+    db = get_db()
+    cur = db.execute(
+        "DELETE FROM family_line_members WHERE family_line_id = ? AND person_id = ?",
+        (family_line_id, person_id),
+    )
+    db.commit()
+    return cur.rowcount > 0
+
+
+def reorder_family_line_members(family_line_id: int, person_ids: list[int]) -> bool:
+    """Persist a full manual ordering of a family line's members."""
+    db = get_db()
+    current = [
+        r["person_id"]
+        for r in db.execute(
+            "SELECT person_id FROM family_line_members WHERE family_line_id = ?",
+            (family_line_id,),
+        ).fetchall()
+    ]
+    if sorted(person_ids) != sorted(current):
+        return False
+    db.executemany(
+        "UPDATE family_line_members SET position = ? "
+        "WHERE family_line_id = ? AND person_id = ?",
+        [(pos, family_line_id, pid) for pos, pid in enumerate(person_ids, start=1)],
+    )
+    db.commit()
+    return True

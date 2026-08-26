@@ -77,12 +77,17 @@ FOLDER_COLUMNS: dict[str, str] = {
     "position": "INTEGER NOT NULL DEFAULT 0",
 }
 
+EVENT_COLUMNS: dict[str, str] = {
+    "kind": "TEXT",
+}
+
 
 def _migrate_photo_columns(db: sqlite3.Connection) -> None:
     tables = (
         ("photos", PHOTO_COLUMNS),
         ("event_photos", EVENT_PHOTO_COLUMNS),
         ("folders", FOLDER_COLUMNS),
+        ("events", EVENT_COLUMNS),
     )
     for table, columns in tables:
         existing = {row["name"] for row in db.execute(f"PRAGMA table_info({table})").fetchall()}
@@ -97,8 +102,6 @@ def init_db() -> None:
     db.executescript(schema)
     _migrate_people_columns(db)
     _migrate_photo_columns(db)
-    # Pin a single blank settings row so get_settings always returns one.
-    db.execute("INSERT OR IGNORE INTO site_settings (id) VALUES (1)")
     db.commit()
 
 

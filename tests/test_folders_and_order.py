@@ -65,6 +65,11 @@ def test_migrate_photo_columns_adds_missing_and_is_idempotent():
         "name TEXT, created_at TIMESTAMP)"
     )
 
+    conn.execute(
+        "CREATE TABLE events (id INTEGER PRIMARY KEY, slug TEXT, name TEXT, "
+        "description TEXT, event_time TEXT, place TEXT, created_at TIMESTAMP)"
+    )
+
     _migrate_photo_columns(conn)
     cols = {r["name"] for r in conn.execute("PRAGMA table_info(photos)")}
     assert {"folder_id", "position"} <= cols
@@ -73,6 +78,8 @@ def test_migrate_photo_columns_adds_missing_and_is_idempotent():
     assert "folder_id" not in event_cols  # events have no folders
     folder_cols = {r["name"] for r in conn.execute("PRAGMA table_info(folders)")}
     assert "position" in folder_cols
+    events_cols = {r["name"] for r in conn.execute("PRAGMA table_info(events)")}
+    assert "kind" in events_cols  # added on upgrade for existing events tables
 
     _migrate_photo_columns(conn)  # idempotent
 

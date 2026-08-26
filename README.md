@@ -100,8 +100,9 @@ All routes below are served from the same app.
 | GET      | `/api/events/<slug>`            | An event plus its photos (JSON).     |
 | GET      | `/api/collections`              | List of collections (JSON).          |
 | GET      | `/api/collections/<slug>`       | A collection plus its photos + folders (JSON). |
-| GET      | `/api/contact`                  | Site contact info (name/email/phone, JSON). |
-| —        | *(other JSON write/auth routes)* | See `/api/*` in `admin_api.py` (login, create/edit/delete, uploads, `PUT /api/contact`). |
+| GET      | `/api/contacts`                 | Ordered list of contact cards (name/role/phone/email, JSON). |
+| GET      | `/api/family-lines`             | Family lines (suvut) with their resolved people members (JSON). |
+| —        | *(other JSON write/auth routes)* | See `/api/*` in `admin_api.py` (login, create/edit/delete, uploads, contacts + family-lines CRUD). |
 | GET      | `/<path:path>`                  | SPA catch-all: any other path serves the SPA index (e.g. `/<slug>`, `/login`, admin views). |
 
 ## Project layout

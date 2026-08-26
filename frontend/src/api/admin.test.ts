@@ -25,7 +25,16 @@ import {
   createCollectionFolder,
   deleteCollectionFolder,
   reorderCollectionFolders,
+  createContact,
   updateContact,
+  deleteContact,
+  reorderContacts,
+  createFamilyLine,
+  updateFamilyLine,
+  deleteFamilyLine,
+  addFamilyLineMember,
+  removeFamilyLineMember,
+  reorderFamilyLineMembers,
 } from "./admin";
 import type { AuthError } from "./auth";
 
@@ -267,32 +276,105 @@ describe("admin api - collections + contact", () => {
     expect(options.body).toBe(JSON.stringify({ order: [2, 1] }));
   });
 
-  it("updateContact() PUTs the three fields to /api/contact", async () => {
-    const fetchMock = mockOk({
-      contact_name: "A",
-      contact_email: null,
-      contact_phone: null,
-    });
-    await updateContact({
-      contact_name: "A",
-      contact_email: null,
-      contact_phone: null,
-    });
+  it("createContact() POSTs JSON to /api/contacts", async () => {
+    const fetchMock = mockOk({ id: 1 });
+    await createContact({ name: "A", email: "a@example.com" });
 
     const { path, options } = lastCall(fetchMock);
-    expect(path).toBe("/api/contact");
-    expect(options).toMatchObject({
-      method: "PUT",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-    });
+    expect(path).toBe("/api/contacts");
+    expect(options).toMatchObject({ method: "POST", credentials: "include" });
     expect(options.body).toBe(
-      JSON.stringify({
-        contact_name: "A",
-        contact_email: null,
-        contact_phone: null,
-      }),
+      JSON.stringify({ name: "A", email: "a@example.com" }),
     );
+  });
+
+  it("updateContact() PUTs JSON to /api/contacts/<id>", async () => {
+    const fetchMock = mockOk({ id: 5 });
+    await updateContact(5, { role: "Admin" });
+
+    const { path, options } = lastCall(fetchMock);
+    expect(path).toBe("/api/contacts/5");
+    expect(options).toMatchObject({ method: "PUT", credentials: "include" });
+    expect(options.body).toBe(JSON.stringify({ role: "Admin" }));
+  });
+
+  it("deleteContact() DELETEs /api/contacts/<id>", async () => {
+    const fetchMock = mockOk({ deleted: true });
+    await deleteContact(5);
+
+    const { path, options } = lastCall(fetchMock);
+    expect(path).toBe("/api/contacts/5");
+    expect(options).toMatchObject({ method: "DELETE", credentials: "include" });
+  });
+
+  it("reorderContacts() PUTs {order} to /api/contacts/order", async () => {
+    const fetchMock = mockOk({ ok: true });
+    await reorderContacts([3, 1, 2]);
+
+    const { path, options } = lastCall(fetchMock);
+    expect(path).toBe("/api/contacts/order");
+    expect(options.body).toBe(JSON.stringify({ order: [3, 1, 2] }));
+  });
+});
+
+describe("admin api - family lines", () => {
+  it("createFamilyLine() POSTs JSON to /api/family-lines", async () => {
+    const fetchMock = mockOk({ slug: "suku" });
+    await createFamilyLine({ name: "Suku", year_range: "1850–" });
+
+    const { path, options } = lastCall(fetchMock);
+    expect(path).toBe("/api/family-lines");
+    expect(options).toMatchObject({ method: "POST", credentials: "include" });
+    expect(options.body).toBe(
+      JSON.stringify({ name: "Suku", year_range: "1850–" }),
+    );
+  });
+
+  it("updateFamilyLine() PUTs JSON to /api/family-lines/<slug> (slug encoded)", async () => {
+    const fetchMock = mockOk({ slug: "the suku" });
+    await updateFamilyLine("the suku", { note: "x" });
+
+    const { path, options } = lastCall(fetchMock);
+    expect(path).toBe("/api/family-lines/the%20suku");
+    expect(options).toMatchObject({ method: "PUT", credentials: "include" });
+    expect(options.body).toBe(JSON.stringify({ note: "x" }));
+  });
+
+  it("deleteFamilyLine() DELETEs /api/family-lines/<slug>", async () => {
+    const fetchMock = mockOk({ deleted: true });
+    await deleteFamilyLine("suku");
+
+    const { path, options } = lastCall(fetchMock);
+    expect(path).toBe("/api/family-lines/suku");
+    expect(options).toMatchObject({ method: "DELETE", credentials: "include" });
+  });
+
+  it("addFamilyLineMember() POSTs {person_slug} to /members", async () => {
+    const fetchMock = mockOk({ slug: "suku", members: [] });
+    await addFamilyLineMember("suku", "kalevi");
+
+    const { path, options } = lastCall(fetchMock);
+    expect(path).toBe("/api/family-lines/suku/members");
+    expect(options).toMatchObject({ method: "POST", credentials: "include" });
+    expect(options.body).toBe(JSON.stringify({ person_slug: "kalevi" }));
+  });
+
+  it("removeFamilyLineMember() DELETEs /members/<personId>", async () => {
+    const fetchMock = mockOk({ slug: "suku", members: [] });
+    await removeFamilyLineMember("suku", 7);
+
+    const { path, options } = lastCall(fetchMock);
+    expect(path).toBe("/api/family-lines/suku/members/7");
+    expect(options).toMatchObject({ method: "DELETE", credentials: "include" });
+  });
+
+  it("reorderFamilyLineMembers() PUTs {order} to /members/order", async () => {
+    const fetchMock = mockOk({ slug: "suku", members: [] });
+    await reorderFamilyLineMembers("suku", [2, 1]);
+
+    const { path, options } = lastCall(fetchMock);
+    expect(path).toBe("/api/family-lines/suku/members/order");
+    expect(options.body).toBe(JSON.stringify({ order: [2, 1] }));
   });
 });
 

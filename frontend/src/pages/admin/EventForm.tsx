@@ -10,11 +10,18 @@ import {
   updateEventPhotoCaption,
   reorderEventPhotos,
 } from "../../api/admin";
-import type { Photo, EventCreate, EventUpdate } from "../../api/types";
+import type { Photo, EventCreate, EventUpdate, EventKind } from "../../api/types";
 import { useAuth } from "../../auth/AuthContext";
 import AdminLayout from "../../components/AdminLayout";
 import AdminPhotoGrid from "../../components/AdminPhotoGrid";
 import { useT } from "../../i18n/LangContext";
+
+const EVENT_KINDS: EventKind[] = [
+  "wedding",
+  "christening",
+  "funeral",
+  "gathering",
+];
 
 function EventForm() {
   const t = useT();
@@ -27,6 +34,7 @@ function EventForm() {
   const [description, setDescription] = useState("");
   const [eventTime, setEventTime] = useState("");
   const [place, setPlace] = useState("");
+  const [kind, setKind] = useState<EventKind | "">("");
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,6 +47,7 @@ function EventForm() {
         setDescription(ev.description ?? "");
         setEventTime(ev.event_time ?? "");
         setPlace(ev.place ?? "");
+        setKind(ev.kind ?? "");
         setPhotos(detail.photos);
       })
       // Client read errors carry no .status: treat as generic.
@@ -85,6 +94,7 @@ function EventForm() {
       description: toNullable(description),
       event_time: toNullable(eventTime),
       place: toNullable(place),
+      kind: kind === "" ? null : kind,
     };
 
     try {
@@ -96,6 +106,7 @@ function EventForm() {
         setDescription(ev.description ?? "");
         setEventTime(ev.event_time ?? "");
         setPlace(ev.place ?? "");
+        setKind(ev.kind ?? "");
         setPhotos(detail.photos);
       } else {
         const created = await createEvent(payload);
@@ -139,6 +150,20 @@ function EventForm() {
             value={place}
             onChange={(e) => setPlace(e.target.value)}
           />
+        </label>
+        <label>
+          {t("admin.field.eventKind")}
+          <select
+            value={kind}
+            onChange={(e) => setKind(e.target.value as EventKind | "")}
+          >
+            <option value="">{t("admin.field.eventKindNone")}</option>
+            {EVENT_KINDS.map((k) => (
+              <option key={k} value={k}>
+                {t(`kinds.${k}`)}
+              </option>
+            ))}
+          </select>
         </label>
         <button type="submit">{t("admin.action.save")}</button>
         {error && <p role="alert">{error}</p>}

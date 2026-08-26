@@ -1,26 +1,11 @@
-import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { getContact } from "../api/client";
-import type { Contact } from "../api/types";
 import { useT, useLang } from "../i18n/LangContext";
 import "./components.css";
 
 function Layout({ children }: { children: ReactNode }) {
   const t = useT();
   const { lang, setLang } = useLang();
-  const [contact, setContact] = useState<Contact | null>(null);
-
-  useEffect(() => {
-    // Best-effort: a failed contact fetch must not break the chrome.
-    getContact()
-      .then(setContact)
-      .catch(() => setContact(null));
-  }, []);
-
-  const hasContact =
-    contact !== null &&
-    (contact.contact_name || contact.contact_email || contact.contact_phone);
 
   return (
     <>
@@ -63,29 +48,6 @@ function Layout({ children }: { children: ReactNode }) {
             </button>
           </span>
         </nav>
-        {hasContact && (
-          <div className="site-contact">
-            {contact!.contact_name && (
-              <span className="site-contact-name">{contact!.contact_name}</span>
-            )}
-            {contact!.contact_email && (
-              <a
-                className="site-contact-email"
-                href={`mailto:${contact!.contact_email}`}
-              >
-                {contact!.contact_email}
-              </a>
-            )}
-            {contact!.contact_phone && (
-              <a
-                className="site-contact-phone"
-                href={`tel:${contact!.contact_phone}`}
-              >
-                {contact!.contact_phone}
-              </a>
-            )}
-          </div>
-        )}
       </header>
       <main className="page-main">{children}</main>
     </>

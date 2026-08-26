@@ -11,6 +11,11 @@ import type {
   CollectionCreate,
   CollectionUpdate,
   Contact,
+  ContactCreate,
+  ContactUpdate,
+  FamilyLine,
+  FamilyLineCreate,
+  FamilyLineUpdate,
   UploadResult,
   CaptionUpdated,
 } from "./types";
@@ -316,8 +321,68 @@ export function reorderCollectionFolders(
   );
 }
 
-// --- Contact / site settings ----------------------------------------------
+// --- Contacts -------------------------------------------------------------
 
-export function updateContact(data: Contact): Promise<Contact> {
-  return sendJson("PUT", "/api/contact", data);
+export function createContact(data: ContactCreate): Promise<Contact> {
+  return sendJson("POST", "/api/contacts", data);
+}
+
+export function updateContact(id: number, data: ContactUpdate): Promise<Contact> {
+  return sendJson("PUT", `/api/contacts/${id}`, data);
+}
+
+export function deleteContact(id: number): Promise<Deleted> {
+  return sendDelete(`/api/contacts/${id}`);
+}
+
+export function reorderContacts(ids: number[]): Promise<CaptionUpdated> {
+  return sendJson("PUT", "/api/contacts/order", { order: ids });
+}
+
+// --- Family lines ---------------------------------------------------------
+
+export function createFamilyLine(data: FamilyLineCreate): Promise<FamilyLine> {
+  return sendJson("POST", "/api/family-lines", data);
+}
+
+export function updateFamilyLine(
+  slug: string,
+  data: FamilyLineUpdate,
+): Promise<FamilyLine> {
+  return sendJson("PUT", `/api/family-lines/${encodeURIComponent(slug)}`, data);
+}
+
+export function deleteFamilyLine(slug: string): Promise<Deleted> {
+  return sendDelete(`/api/family-lines/${encodeURIComponent(slug)}`);
+}
+
+export function addFamilyLineMember(
+  slug: string,
+  personSlug: string,
+): Promise<FamilyLine> {
+  return sendJson(
+    "POST",
+    `/api/family-lines/${encodeURIComponent(slug)}/members`,
+    { person_slug: personSlug },
+  );
+}
+
+export function removeFamilyLineMember(
+  slug: string,
+  personId: number,
+): Promise<FamilyLine> {
+  return sendDelete(
+    `/api/family-lines/${encodeURIComponent(slug)}/members/${personId}`,
+  );
+}
+
+export function reorderFamilyLineMembers(
+  slug: string,
+  personIds: number[],
+): Promise<FamilyLine> {
+  return sendJson(
+    "PUT",
+    `/api/family-lines/${encodeURIComponent(slug)}/members/order`,
+    { order: personIds },
+  );
 }

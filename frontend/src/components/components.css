@@ -11,26 +11,6 @@
   border-bottom: 1px solid var(--border);
 }
 
-/* Admin-editable contact info: sits on its own row under the title/nav. */
-.site-contact {
-  flex-basis: 100%;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.25rem 1rem;
-  font-size: 0.9rem;
-  color: var(--text);
-}
-
-.site-contact-name {
-  font-weight: 500;
-  color: var(--text-h);
-}
-
-.site-contact a {
-  color: var(--accent);
-}
-
 .site-header a {
   color: var(--text-h);
   text-decoration: none;

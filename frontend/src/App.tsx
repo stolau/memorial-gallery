@@ -10,6 +10,7 @@ import AdminDashboard from './pages/admin/AdminDashboard'
 import PersonForm from './pages/admin/PersonForm'
 import EventForm from './pages/admin/EventForm'
 import CollectionForm from './pages/admin/CollectionForm'
+import FamilyLineForm from './pages/admin/FamilyLineForm'
 import ProtectedRoute from './auth/ProtectedRoute'
 import './App.css'
 
@@ -75,6 +76,22 @@ function App() {
         element={
           <ProtectedRoute>
             <CollectionForm />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/family-lines/new"
+        element={
+          <ProtectedRoute>
+            <FamilyLineForm />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/family-lines/:slug/edit"
+        element={
+          <ProtectedRoute>
+            <FamilyLineForm />
           </ProtectedRoute>
         }
       />

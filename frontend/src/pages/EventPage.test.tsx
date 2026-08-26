@@ -28,6 +28,7 @@ const detail: EventDetail = {
     description: "A summer wedding in Helsinki",
     event_time: "1948-06-12",
     place: "Helsinki",
+    kind: null,
   },
   photos: [
     {
