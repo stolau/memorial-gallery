@@ -1,43 +1,84 @@
-/* Shared component styling, ported in spirit from app/static/css/style.css
-   (plain CSS, no Bootstrap dependency). */
+/* Shared component styling for the "Kaijankoski Memorial" dark editorial
+   theme. Palette tokens live in index.css; this file maps them onto the
+   viewer + admin component classes. */
 
+/* ---------- Header / layout shell ---------- */
 .site-header {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid var(--border);
+  padding: 16px clamp(14px, 4vw, 28px);
+  border-bottom: 1px solid var(--hairline);
 }
 
 .site-header a {
-  color: var(--text-h);
+  color: var(--fg);
   text-decoration: none;
 }
 
 .site-title {
   font-family: var(--heading);
-  font-weight: 500;
-  font-size: 1.5rem;
-}
-
-.site-nav a {
-  color: var(--accent);
+  font-weight: 400;
+  font-size: 26px;
+  letter-spacing: 0.2px;
+  color: var(--fg);
 }
 
 .site-nav {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 14px;
+}
+
+.site-nav a {
+  color: var(--gold);
+  font-size: 15px;
+}
+
+.site-nav a:hover {
+  color: var(--gold-bright);
+}
+
+/* "Info" pill button that opens the contact modal */
+.info-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--chip);
+  padding: 6px 14px;
+  border: 1px solid var(--control);
+  border-radius: 999px;
+  background: none;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.info-pill:hover {
+  border-color: var(--gold-border);
+  color: var(--gold-bright);
+}
+
+.info-pill svg {
+  display: block;
+}
+
+.nav-divider {
+  width: 1px;
+  align-self: stretch;
+  min-height: 20px;
+  background: var(--hairline);
 }
 
 .lang-switch {
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  padding-inline-start: 1rem;
-  border-inline-start: 1px solid var(--border);
 }
 
 .lang-switch button {
@@ -53,7 +94,7 @@
 
 .lang-switch button[aria-pressed="true"] {
   opacity: 1;
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--gold);
   outline-offset: 1px;
 }
 
@@ -61,17 +102,20 @@
   display: block;
   width: 24px;
   height: 16px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--hairline);
   border-radius: 2px;
 }
 
 .page-main {
-  padding: 1.5rem;
+  flex: 1;
+  padding: clamp(26px, 5vw, 40px) clamp(14px, 4vw, 28px) 72px;
+  text-align: left;
 }
 
 /* Free-typed text (names, bios, descriptions, captions) must wrap inside
    its box rather than widen the page, even as one unbroken string. */
 .page-main h1,
+.page-main h2,
 .page-main p,
 .page-main li,
 .photo-grid figcaption,
@@ -82,18 +126,49 @@
   overflow-wrap: anywhere;
 }
 
-/* Info text (bio, description, collection info) rendered by <Paragraphs>:
-   blank lines already split <p> blocks, so keep single newlines inside a
-   block visible instead of collapsing them to spaces. */
+/* Info text (bio, description, collection info) rendered by <Paragraphs>. */
 .info-paragraph {
   white-space: pre-line;
 }
 
-/* People grid + cards */
+/* ---------- Shared eyebrow + centered page head ---------- */
+.eyebrow {
+  font-family: var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-size: 12px;
+  color: var(--eyebrow2);
+  margin: 0;
+}
+
+.page-head {
+  text-align: center;
+  margin: 0 0 clamp(28px, 5vw, 44px);
+}
+
+.page-eyebrow {
+  font-family: var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 2.4px;
+  font-size: 12px;
+  color: var(--eyebrow2);
+  margin: 0 0 14px;
+}
+
+.page-title {
+  font-family: var(--heading);
+  font-weight: 300;
+  font-size: clamp(34px, 8vw, 52px);
+  line-height: 1.05;
+  color: var(--fg);
+  margin: 0;
+}
+
+/* ---------- People grid ---------- */
 .people-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(224px, 42vw), 1fr));
+  gap: clamp(14px, 3vw, 26px);
   list-style: none;
   margin: 0;
   padding: 0;
@@ -101,150 +176,480 @@
 
 .person-card {
   display: block;
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
   overflow: hidden;
   text-decoration: none;
-  color: var(--text-h);
-  background: var(--bg);
+  color: var(--fg);
+  background: var(--card);
+  transition: border-color 0.15s ease;
+}
+
+.person-card:hover {
+  border-color: var(--gold-border);
 }
 
 .person-card-img {
   display: block;
   width: 100%;
-  height: 220px;
+  aspect-ratio: 4 / 5;
   object-fit: cover;
+  background: var(--imgbg);
 }
 
 .person-card-name {
-  padding: 0.75rem 1rem;
-  font-weight: 500;
+  display: block;
+  padding: 12px 14px 14px;
+  font-family: var(--heading);
+  font-weight: 400;
+  font-size: 21px;
+  color: var(--fg);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-/* Profile picture on a person detail page */
-.profile-img {
-  width: 320px;
-  height: 320px;
-  max-width: 100%;
-  object-fit: cover;
-  border-radius: 8px;
+/* ---------- Home: events + family lines section ---------- */
+.home-section {
+  margin-top: clamp(40px, 7vw, 68px);
+  padding-top: clamp(28px, 5vw, 44px);
+  border-top: 1px solid var(--hairline);
 }
 
-/* Photo grid */
+.home-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px 24px;
+  margin-bottom: clamp(20px, 4vw, 32px);
+}
+
+.home-section-title {
+  font-family: var(--heading);
+  font-weight: 300;
+  font-size: clamp(26px, 6vw, 34px);
+  color: var(--fg);
+  margin: 0;
+}
+
+.segmented {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  background: var(--inset);
+}
+
+.seg-btn {
+  font: inherit;
+  font-size: 14px;
+  color: var(--muted);
+  padding: 6px 16px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.seg-btn:hover {
+  color: var(--chip);
+}
+
+.seg-btn[aria-selected="true"] {
+  background: var(--gold-14);
+  color: var(--gold-bright);
+}
+
+/* ---------- Events grid + cards ---------- */
+.events-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(232px, 42vw), 1fr));
+  gap: clamp(14px, 3vw, 26px);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.event-card {
+  display: block;
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+  overflow: hidden;
+  text-decoration: none;
+  color: var(--fg);
+  background: var(--card);
+  transition: border-color 0.15s ease;
+}
+
+.event-card:hover {
+  border-color: var(--gold-border);
+}
+
+.event-card-img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+  background: var(--imgbg);
+}
+
+.kind-eyebrow {
+  display: block;
+  font-family: var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 1.6px;
+  font-size: 11px;
+  color: var(--gold);
+  padding: 12px 14px 0;
+}
+
+.event-card-name {
+  display: block;
+  padding: 6px 14px 0;
+  font-family: var(--heading);
+  font-weight: 400;
+  font-size: 19px;
+  color: var(--fg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.event-card-meta {
+  display: block;
+  color: var(--caption);
+  font-size: 13px;
+  padding: 4px 14px 14px;
+}
+
+/* ---------- Family-lines cards ---------- */
+.family-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
+  gap: clamp(14px, 3vw, 22px);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.family-card {
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+  background: var(--card);
+  padding: 20px 22px;
+}
+
+.family-name {
+  font-family: var(--heading);
+  font-weight: 400;
+  font-size: 22px;
+  color: var(--fg);
+  margin: 0 0 6px;
+}
+
+.family-range {
+  font-family: var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 1.4px;
+  font-size: 11px;
+  color: var(--eyebrow);
+  margin: 0;
+}
+
+.family-note {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--muted);
+  margin: 12px 0 0;
+}
+
+.family-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.family-chip {
+  font-size: 13px;
+  padding: 5px 12px;
+  border: 1px solid var(--control);
+  border-radius: 999px;
+  color: var(--chip);
+  text-decoration: none;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.family-chip:hover {
+  border-color: var(--gold-border);
+  color: var(--gold-bright);
+}
+
+/* ---------- Collections grid + cards ---------- */
+.collections-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(224px, 42vw), 1fr));
+  gap: clamp(14px, 3vw, 26px);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.collection-card {
+  display: block;
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+  overflow: hidden;
+  text-decoration: none;
+  color: var(--fg);
+  background: var(--card);
+  transition: border-color 0.15s ease;
+}
+
+.collection-card:hover {
+  border-color: var(--gold-border);
+}
+
+.collection-card-img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+  background: var(--imgbg);
+}
+
+.collection-card-name {
+  display: block;
+  padding: 12px 14px 14px;
+  font-family: var(--heading);
+  font-weight: 400;
+  font-size: 20px;
+  color: var(--fg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---------- Person / event page heads ---------- */
+.back-link {
+  display: inline-block;
+  font-family: var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 1.4px;
+  font-size: 12px;
+  color: var(--gold);
+  text-decoration: none;
+  margin-bottom: clamp(20px, 4vw, 32px);
+}
+
+.back-link:hover {
+  color: var(--gold-bright);
+}
+
+.detail-head {
+  text-align: center;
+  margin-bottom: clamp(26px, 5vw, 40px);
+}
+
+.detail-name {
+  font-family: var(--heading);
+  font-weight: 300;
+  font-size: clamp(32px, 7.5vw, 52px);
+  line-height: 1.05;
+  color: var(--fg);
+  margin: 0;
+}
+
+.detail-years {
+  font-family: var(--mono);
+  letter-spacing: 1.4px;
+  font-size: 13px;
+  color: var(--eyebrow2);
+  margin: 12px 0 0;
+}
+
+.detail-meta {
+  font-family: var(--mono);
+  letter-spacing: 1px;
+  font-size: 13px;
+  color: var(--caption);
+  margin: 12px 0 0;
+}
+
+.detail-desc {
+  max-width: 60ch;
+  margin: 18px auto 0;
+  font-size: 16px;
+  line-height: 1.75;
+  color: var(--bio);
+}
+
+.detail-desc .info-paragraph + .info-paragraph {
+  margin-top: 1em;
+}
+
+.show-info-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--gold-bright);
+  padding: 9px 20px;
+  border: 1px solid var(--gold-border);
+  border-radius: 999px;
+  background: var(--gold-10);
+  cursor: pointer;
+  margin-top: 20px;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.show-info-btn:hover {
+  background: var(--gold-14);
+  border-color: var(--gold-border2);
+}
+
+/* ---------- Photo grid ---------- */
 .photo-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 1rem;
-  margin: 1.5rem 0;
+  grid-template-columns: repeat(auto-fill, minmax(min(186px, 40vw), 1fr));
+  gap: clamp(12px, 2.4vw, 18px);
+  margin: clamp(20px, 4vw, 32px) 0 0;
 }
 
 .photo-grid figure {
   margin: 0;
 }
 
-/* Uniform 3:2 tiles that never crop: each photo is shrunk until BOTH
-   dimensions fit inside the box (portrait ones get side bands, extra-wide
-   ones get top/bottom bands). The subtle backdrop fills the leftover space. */
+/* Uniform 3:2 tiles that never crop; the subtle inset backdrop fills the
+   leftover space around portrait/extra-wide photos. */
 .photo-grid img {
   display: block;
   width: 100%;
   height: auto;
   aspect-ratio: 3 / 2;
   object-fit: contain;
-  background: rgba(127, 127, 127, 0.12);
+  background: var(--inset);
   border-radius: 6px;
+  cursor: zoom-in;
 }
 
-/* Folder cards on a person page: a distinct row above the photos.
-   Grid keeps several compact cards per row and scales them down on
-   small screens instead of stacking one per row. */
+.photo-grid figcaption {
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--caption);
+}
+
+.photo-grid-empty {
+  color: var(--muted);
+}
+
+.photo-grid-btn {
+  border: 0;
+  padding: 0;
+  background: none;
+  cursor: zoom-in;
+  display: block;
+  width: 100%;
+}
+
+/* ---------- Folder cards (person / collection pages) ---------- */
 .folder-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-  gap: 1rem;
-  margin: 1.5rem 0 0.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(150px, 27vw), 1fr));
+  gap: clamp(12px, 2.4vw, 18px);
+  margin: clamp(20px, 4vw, 32px) 0 0.5rem;
 }
 
 .folder-card {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.35rem;
+  align-items: stretch;
+  gap: 8px;
   min-width: 0;
-  padding: 0.9rem 0.75rem;
+  padding: 10px;
   font: inherit;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--bg);
-  color: var(--accent);
+  text-align: left;
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--gold);
   cursor: pointer;
+  transition: border-color 0.15s ease;
 }
 
-/* Cover thumbnail (folder's first photo) shown above the name */
 .folder-thumb {
   width: 100%;
   aspect-ratio: 3 / 2;
   object-fit: cover;
   border-radius: 6px;
+  background: var(--imgbg);
 }
 
 .folder-card:hover {
-  border-color: var(--accent-border);
+  border-color: var(--gold-border);
 }
 
-/* Names stay on ONE line: too-long text is cut with an ellipsis instead of
-   wrapping and stretching the card (full name in the title tooltip). */
 .folder-name {
-  font-weight: 500;
-  color: var(--text-h);
+  font-size: 14px;
+  color: var(--fg);
   max-width: 100%;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  text-align: center;
 }
 
 .folder-count {
-  font-size: 0.85rem;
-  color: var(--text);
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--eyebrow2);
 }
 
-/* Opened-folder view: back button + folder name */
+/* Opened-folder view: back bar + folder name */
 .folder-bar {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  margin-top: 1.5rem;
+  gap: 16px;
+  margin-top: clamp(20px, 4vw, 32px);
 }
 
 .folder-back {
-  font: inherit;
-  font-size: 0.9rem;
-  padding: 0.35rem 0.8rem;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  background: var(--bg);
-  color: var(--text-h);
+  font-family: var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  font-size: 12px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--control);
+  background: none;
+  color: var(--gold);
   cursor: pointer;
 }
 
 .folder-back:hover {
-  border-color: var(--accent-border);
-  color: var(--accent);
+  border-color: var(--gold-border);
+  color: var(--gold-bright);
 }
 
 .folder-heading {
   margin: 0;
-  font-size: 1.15rem;
-  color: var(--text-h);
+  font-family: var(--heading);
+  font-weight: 400;
+  font-size: 24px;
+  color: var(--fg);
   text-align: left;
 }
 
-/* Drag-to-reorder affordances (edit mode) */
+/* Drag-to-reorder affordances (admin edit mode) */
 .photo-grid figure[draggable="true"] {
   cursor: grab;
 }
@@ -254,21 +659,20 @@
 }
 
 .drag-hint {
-  color: var(--text);
-  font-size: 0.85rem;
+  color: var(--muted);
+  font-size: 13px;
   text-align: left;
   margin: 1rem 0 0;
 }
 
-/* Edit-mode folder row: cards double as drop targets for dragged photos */
 .folder-drop {
   position: relative;
   cursor: default;
 }
 
 .folder-card.drop-active {
-  border-color: var(--accent-border);
-  background: var(--accent-bg, rgba(127, 127, 127, 0.12));
+  border-color: var(--gold-border);
+  background: var(--gold-10);
 }
 
 .folder-card.dragging {
@@ -281,7 +685,7 @@
   right: 0.35rem;
   border: 0;
   background: none;
-  color: var(--text);
+  color: var(--muted);
   font-size: 1rem;
   line-height: 1;
   padding: 0.1rem 0.25rem;
@@ -289,12 +693,13 @@
 }
 
 .folder-delete:hover {
-  color: var(--accent);
+  color: var(--gold-bright);
 }
 
 .folder-unsort,
 button.folder-add {
   border-style: dashed;
+  align-items: center;
   justify-content: center;
 }
 
@@ -309,10 +714,10 @@ button.folder-add {
   min-width: 0;
   box-sizing: border-box;
   padding: 0.3rem 0.45rem;
-  border: 1px solid var(--border);
+  border: 1px solid var(--hairline);
   border-radius: 6px;
-  background: var(--bg);
-  color: var(--text-h);
+  background: var(--inset);
+  color: var(--fg);
 }
 
 .folder-add button:not(.folder-delete) {
@@ -320,120 +725,22 @@ button.folder-add {
   font-size: 0.9rem;
   padding: 0.3rem 0.7rem;
   border-radius: 6px;
-  border: 1px solid var(--border);
-  background: var(--bg);
-  color: var(--text-h);
+  border: 1px solid var(--control);
+  background: none;
+  color: var(--gold);
   cursor: pointer;
 }
 
-/* Folder cards used as buttons (open on click) keep the pointer cursor */
 .folder-drop[role="button"],
 .folder-unsort[role="button"] {
   cursor: pointer;
 }
 
-.photo-grid figcaption {
-  margin-top: 0.4rem;
-  font-size: 0.85rem;
-  color: var(--text);
-}
-
-.photo-grid-empty {
-  color: var(--text);
-}
-
-/* Event grid + cards */
-.events-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 1.5rem;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.event-card {
-  display: block;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  overflow: hidden;
-  text-decoration: none;
-  color: var(--text-h);
-  background: var(--bg);
-}
-
-.event-card-img {
-  display: block;
-  width: 100%;
-  height: 220px;
-  object-fit: cover;
-}
-
-.event-card-name {
-  padding: 0.75rem 1rem;
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.event-card-meta {
-  color: var(--text);
-  font-size: 0.85rem;
-  padding: 0 1rem 0.75rem;
-  display: block;
-}
-
-/* Collections grid + cards (cover comes from the collection's first photo) */
-.collections-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 1.5rem;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.collection-card {
-  display: block;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  overflow: hidden;
-  text-decoration: none;
-  color: var(--text-h);
-  background: var(--bg);
-}
-
-.collection-card-img {
-  display: block;
-  width: 100%;
-  height: 220px;
-  object-fit: cover;
-}
-
-.collection-card-name {
-  padding: 0.75rem 1rem;
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Photo grid button (unstyled reset so the grid looks unchanged) */
-.photo-grid-btn {
-  border: 0;
-  padding: 0;
-  background: none;
-  cursor: pointer;
-  display: block;
-  width: 100%;
-}
-
-/* Lightbox */
+/* ---------- Lightbox ---------- */
 .lightbox-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.85);
+  background: var(--overlay-lb);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -445,100 +752,172 @@ button.folder-add {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.75rem;
-  max-width: 90vw;
+  gap: 16px;
+  max-width: 88vw;
 }
 
 .lightbox-img {
-  max-width: 90vw;
-  max-height: 80vh;
+  max-width: 88vw;
+  max-height: 74vh;
   object-fit: contain;
   border-radius: 6px;
 }
 
 .lightbox-caption {
-  color: #fff;
+  color: var(--lb);
+  font-size: 15px;
+  max-width: 70ch;
   margin: 0;
   text-align: center;
 }
 
-.lightbox-counter {
-  color: #fff;
-  font-size: 0.9rem;
-}
-
 .lightbox-controls {
   display: flex;
-  gap: 0.5rem;
+  align-items: center;
+  gap: 16px;
+}
+
+.lightbox-counter {
+  font-family: var(--mono);
+  letter-spacing: 1.4px;
+  color: var(--lb);
+  font-size: 13px;
+  min-width: 5ch;
+  text-align: center;
 }
 
 .lightbox-controls button {
-  border: 0;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.15);
-  color: #fff;
-  font-size: 1.25rem;
+  border: 1px solid var(--control);
+  border-radius: 999px;
+  background: none;
+  color: var(--lb);
+  font-size: 1.15rem;
   line-height: 1;
-  padding: 0.4rem 0.8rem;
+  padding: 8px 14px;
   cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease;
 }
 
 .lightbox-controls button:hover {
-  background: rgba(255, 255, 255, 0.3);
+  border-color: var(--gold-border);
+  color: var(--gold-bright);
 }
 
-/* Portrait dialog */
-.portrait-overlay {
+/* ---------- Shared modal overlay ---------- */
+.portrait-overlay,
+.contact-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.85);
+  background: var(--overlay);
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: clamp(16px, 4vw, 40px);
   z-index: 1000;
 }
 
+.dialog-close {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 1.5rem;
+  line-height: 1;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+.dialog-close:hover {
+  color: var(--gold-bright);
+}
+
+/* ---------- Person info modal (two-column) ---------- */
 .portrait-dialog {
-  background: var(--bg);
-  color: var(--text-h);
-  border-radius: 8px;
-  padding: 1.5rem;
-  width: 80%;
-  height: 80%;
-  max-width: 80vw;
-  max-height: 80vh;
-  overflow: auto;
   position: relative;
-  text-align: center;
+  background: var(--dialog);
+  color: var(--body);
+  border: 1px solid var(--hairline);
+  border-radius: 14px;
+  padding: clamp(22px, 4vw, 34px);
+  width: 100%;
+  max-width: 920px;
+  max-height: 88vh;
+  overflow: auto;
+  box-sizing: border-box;
+  text-align: left;
+}
+
+.info-cols {
+  display: grid;
+  grid-template-columns: minmax(0, 260px) 1fr;
+  gap: clamp(20px, 4vw, 36px);
+  align-items: start;
+}
+
+.info-left {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
 }
 
 .portrait-dialog .profile-img {
   display: block;
-  margin-inline: auto;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  border-radius: 10px;
+  background: var(--imgbg);
 }
 
-.portrait-dialog > button {
-  position: absolute;
-  top: 0.75rem;
-  right: 0.75rem;
+.info-eyebrow {
+  font-family: var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-size: 12px;
+  color: var(--eyebrow2);
+  margin: 0 0 12px;
 }
 
+.info-name {
+  font-family: var(--heading);
+  font-weight: 300;
+  font-size: clamp(28px, 5vw, 40px);
+  line-height: 1.05;
+  color: var(--fg);
+  margin: 0 0 18px;
+}
+
+.info-bio {
+  max-width: 64ch;
+  font-size: 16px;
+  line-height: 1.75;
+  color: var(--bio);
+}
+
+.info-bio .info-paragraph + .info-paragraph {
+  margin-top: 1em;
+}
+
+/* Facts list inside the modal (icon + value rows) */
 .person-facts {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem 1.5rem;
-  justify-content: center;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .person-fact {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 12px;
   margin: 0;
-  flex: 0 0 auto;
 }
 
 .person-fact dt,
@@ -549,10 +928,129 @@ button.folder-add {
 .person-fact dt {
   display: inline-flex;
   align-items: center;
+  color: var(--gold);
+}
+
+.person-fact dd {
+  font-size: 14px;
+  color: var(--body);
 }
 
 .person-fact svg {
   display: block;
+}
+
+/* Profile picture fallback size (admin form reuse) */
+.profile-img {
+  width: 320px;
+  height: 320px;
+  max-width: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+  background: var(--imgbg);
+}
+
+@media (max-width: 640px) {
+  .info-cols {
+    grid-template-columns: 1fr;
+  }
+  .info-left {
+    max-width: 260px;
+  }
+}
+
+/* ---------- Contact modal ---------- */
+.contact-dialog {
+  position: relative;
+  background: var(--dialog);
+  border: 1px solid var(--hairline);
+  border-radius: 14px;
+  padding: clamp(24px, 4vw, 34px);
+  width: 100%;
+  max-width: 520px;
+  max-height: 88vh;
+  overflow: auto;
+  box-sizing: border-box;
+  text-align: left;
+}
+
+.contact-eyebrow {
+  font-family: var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-size: 12px;
+  color: var(--eyebrow2);
+  margin: 0 0 12px;
+}
+
+.contact-title {
+  font-family: var(--heading);
+  font-weight: 300;
+  font-size: clamp(26px, 5vw, 34px);
+  color: var(--fg);
+  margin: 0 0 12px;
+}
+
+.contact-note {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--caption);
+  max-width: 46ch;
+  margin: 0 0 22px;
+}
+
+.contact-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.contact-card {
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+  background: var(--inset);
+  padding: 16px 18px;
+}
+
+.contact-name {
+  font-size: 16px;
+  color: var(--fg);
+  margin: 0;
+}
+
+.contact-role {
+  font-family: var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 1.4px;
+  font-size: 11px;
+  color: var(--eyebrow);
+  margin: 4px 0 0;
+}
+
+.contact-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin-top: 12px;
+}
+
+.contact-links a {
+  color: var(--gold);
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.contact-links a:hover {
+  color: var(--gold-bright);
+}
+
+.contact-empty {
+  color: var(--muted);
+  font-size: 14px;
+  margin: 0;
 }
 
 /* ---------- Admin dashboard ---------- */
@@ -562,13 +1060,22 @@ button.folder-add {
   margin: 0 auto 2.5rem;
 }
 
+.admin-section h2 {
+  font-family: var(--heading);
+  font-weight: 400;
+  font-size: 24px;
+  color: var(--fg);
+  margin: 0 0 12px;
+}
+
 .admin-list {
   list-style: none;
   margin: 0 0 1rem;
   padding: 0;
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
   overflow: hidden;
+  background: var(--card);
 }
 
 .admin-list li {
@@ -576,7 +1083,7 @@ button.folder-add {
   align-items: center;
   gap: 1rem;
   padding: 0.65rem 1rem;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--hairline);
 }
 
 .admin-list li:last-child {
@@ -586,7 +1093,7 @@ button.folder-add {
 .admin-list li > span {
   flex: 1 1 auto;
   font-weight: 500;
-  color: var(--text-h);
+  color: var(--fg);
 }
 
 .admin-row-actions {
@@ -596,7 +1103,6 @@ button.folder-add {
   flex: 0 0 auto;
 }
 
-/* Buttons and link-buttons throughout the admin UI */
 .admin-row-actions a,
 .admin-row-actions button,
 .admin-new,
@@ -606,9 +1112,9 @@ button.folder-add {
   font-size: 0.9rem;
   padding: 0.35rem 0.8rem;
   border-radius: 6px;
-  border: 1px solid var(--border);
-  background: var(--bg);
-  color: var(--text-h);
+  border: 1px solid var(--control);
+  background: none;
+  color: var(--chip);
   text-decoration: none;
   line-height: 1.3;
   cursor: pointer;
@@ -619,8 +1125,8 @@ button.folder-add {
 .admin-new:hover,
 .photo-upload button:hover,
 .photo-grid figure button:hover {
-  border-color: var(--accent-border);
-  color: var(--accent);
+  border-color: var(--gold-border);
+  color: var(--gold-bright);
 }
 
 .admin-new {
@@ -642,19 +1148,20 @@ button.folder-add {
   flex-direction: column;
   gap: 0.35rem;
   font-weight: 500;
-  color: var(--text-h);
+  color: var(--fg);
 }
 
 .admin-form input[type="text"],
 .admin-form input[type="password"],
 .admin-form input[type="file"],
+.admin-form select,
 .admin-form textarea {
   font: inherit;
   padding: 0.5rem 0.6rem;
-  border: 1px solid var(--border);
+  border: 1px solid var(--hairline);
   border-radius: 6px;
-  background: var(--bg);
-  color: var(--text-h);
+  background: var(--inset);
+  color: var(--fg);
   width: 100%;
   box-sizing: border-box;
 }
@@ -664,7 +1171,6 @@ button.folder-add {
   resize: vertical;
 }
 
-/* Checkbox rows keep the box beside its label */
 .admin-form label.admin-check {
   flex-direction: row;
   align-items: center;
@@ -680,10 +1186,14 @@ button.folder-add {
   font: inherit;
   padding: 0.5rem 1.25rem;
   border-radius: 6px;
-  border: 1px solid var(--accent-border);
-  background: var(--accent-bg);
-  color: var(--accent);
+  border: 1px solid var(--gold-border);
+  background: var(--gold-10);
+  color: var(--gold-bright);
   cursor: pointer;
+}
+
+.admin-form button[type="submit"]:hover {
+  background: var(--gold-14);
 }
 
 .admin-form .profile-img {
@@ -692,7 +1202,7 @@ button.folder-add {
 }
 
 .admin-saved {
-  color: var(--accent);
+  color: var(--gold-bright);
   font-size: 0.9rem;
 }
 
@@ -713,16 +1223,16 @@ button.folder-add {
   gap: 0.35rem;
   width: 100%;
   font-weight: 500;
-  color: var(--text-h);
+  color: var(--fg);
 }
 
 .photo-upload input[type="text"] {
   font: inherit;
   padding: 0.5rem 0.6rem;
-  border: 1px solid var(--border);
+  border: 1px solid var(--hairline);
   border-radius: 6px;
-  background: var(--bg);
-  color: var(--text-h);
+  background: var(--inset);
+  color: var(--fg);
   width: 100%;
   box-sizing: border-box;
 }
@@ -731,39 +1241,14 @@ button.folder-add {
   margin: 0.4rem 0.4rem 0 0;
 }
 
+/* ---------- Responsive ---------- */
 @media (max-width: 576px) {
   .site-header {
     padding: 0.75rem 1rem;
     gap: 0.5rem 0.75rem;
-    flex-wrap: wrap;
   }
   .site-nav {
-    gap: 0.75rem;
-  }
-  .lang-switch {
-    padding-inline-start: 0.75rem;
-  }
-  .people-grid {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  }
-  .events-grid {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  }
-  .collections-grid {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  }
-  .profile-img {
-    width: 220px;
-    height: 220px;
-  }
-  .person-card-img {
-    height: 160px;
-  }
-  .event-card-img {
-    height: 160px;
-  }
-  .collection-card-img {
-    height: 160px;
+    gap: 10px;
   }
   /* Phones: at least 3 folder cards per row, scaled to fit */
   .folder-grid {
@@ -771,13 +1256,10 @@ button.folder-add {
     gap: 0.5rem;
   }
   .folder-card {
-    padding: 0.55rem 0.4rem;
-    gap: 0.2rem;
-  }
-  .folder-name {
-    font-size: 0.85rem;
+    padding: 0.5rem;
+    gap: 0.35rem;
   }
   .folder-count {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
   }
 }

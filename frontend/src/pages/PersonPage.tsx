@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, useSearchParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { getPerson } from "../api/client";
 import type { Folder, PersonDetail, Photo } from "../api/types";
 import Layout from "../components/Layout";
@@ -124,10 +124,25 @@ function PersonPage() {
       {!error && detail === null && <p>{t("common.loading")}</p>}
       {detail && (
         <>
-          <h1>{detail.person.display_name}</h1>
-          <button type="button" onClick={() => setPortraitOpen(true)}>
-            {t("person.portrait")}
-          </button>
+          <Link to="/" className="back-link">
+            ← {t("people.title")}
+          </Link>
+          <div className="detail-head">
+            <h1 className="detail-name">{detail.person.display_name}</h1>
+            {(() => {
+              const years = [detail.person.birth_date, detail.person.death_date]
+                .filter(Boolean)
+                .join(" – ");
+              return years ? <p className="detail-years">{years}</p> : null;
+            })()}
+            <button
+              type="button"
+              className="show-info-btn"
+              onClick={() => setPortraitOpen(true)}
+            >
+              {t("showInfo")}
+            </button>
+          </div>
           <FolderedPhotos photos={detail.photos} folders={detail.folders} />
         </>
       )}

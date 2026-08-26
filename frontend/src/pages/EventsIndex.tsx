@@ -18,32 +18,40 @@ function EventsIndex() {
 
   return (
     <Layout>
-      <h1>{t("events.title")}</h1>
+      <div className="page-head">
+        <p className="page-eyebrow">{t("inMemoriam")}</p>
+        <h1 className="page-title">{t("events.title")}</h1>
+      </div>
       {error && <p role="alert">{error}</p>}
       {!error && events === null && <p>{t("common.loading")}</p>}
       {events && events.length === 0 && <p>{t("events.empty")}</p>}
       {events && events.length > 0 && (
         <ul className="events-grid">
-          {events.map((event) => (
-            <li key={event.slug}>
-              <Link to={`/events/${event.slug}`} className="event-card">
-                {event.cover_url && (
-                  <img
-                    className="event-card-img"
-                    src={event.cover_url}
-                    alt={event.name}
-                  />
-                )}
-                <span className="event-card-name">{event.name}</span>
-                {event.place && (
-                  <span className="event-card-meta">{event.place}</span>
-                )}
-                {event.event_time && (
-                  <span className="event-card-meta">{event.event_time}</span>
-                )}
-              </Link>
-            </li>
-          ))}
+          {events.map((event) => {
+            const meta = [event.event_time, event.place]
+              .filter(Boolean)
+              .join(" · ");
+            return (
+              <li key={event.slug}>
+                <Link to={`/events/${event.slug}`} className="event-card">
+                  {event.cover_url && (
+                    <img
+                      className="event-card-img"
+                      src={event.cover_url}
+                      alt={event.name}
+                    />
+                  )}
+                  {event.kind && (
+                    <span className="kind-eyebrow">
+                      {t(`kinds.${event.kind}`)}
+                    </span>
+                  )}
+                  <span className="event-card-name">{event.name}</span>
+                  {meta && <span className="event-card-meta">{meta}</span>}
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       )}
     </Layout>

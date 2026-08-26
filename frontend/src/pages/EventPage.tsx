@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { getEvent } from "../api/client";
 import type { EventDetail } from "../api/types";
 import Layout from "../components/Layout";
@@ -28,16 +28,26 @@ function EventPage() {
       {!error && detail === null && <p>{t("common.loading")}</p>}
       {detail && (
         <>
-          <h1>{detail.event.name}</h1>
-          {detail.event.description && (
-            <Paragraphs text={detail.event.description} />
-          )}
-          <ul>
-            {detail.event.event_time && (
-              <li>{t("event.time")}: {detail.event.event_time}</li>
+          <Link to="/events" className="back-link">
+            ← {t("events.title")}
+          </Link>
+          <div className="detail-head">
+            {detail.event.kind && (
+              <p className="page-eyebrow">{t(`kinds.${detail.event.kind}`)}</p>
             )}
-            {detail.event.place && <li>{t("event.place")}: {detail.event.place}</li>}
-          </ul>
+            <h1 className="detail-name">{detail.event.name}</h1>
+            {(() => {
+              const meta = [detail.event.event_time, detail.event.place]
+                .filter(Boolean)
+                .join(" · ");
+              return meta ? <p className="detail-meta">{meta}</p> : null;
+            })()}
+            {detail.event.description && (
+              <div className="detail-desc">
+                <Paragraphs text={detail.event.description} />
+              </div>
+            )}
+          </div>
           <PhotoGrid photos={detail.photos} />
         </>
       )}

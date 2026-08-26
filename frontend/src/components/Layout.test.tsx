@@ -1,12 +1,22 @@
 // @vitest-environment jsdom
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { LangProvider } from "../i18n/LangContext";
 import Layout from "./Layout";
+import { getContacts } from "../api/client";
+
+vi.mock("../api/client", () => ({
+  // The "Info" pill opens the contact modal, which loads contacts on open.
+  getContacts: vi.fn(() => Promise.resolve([])),
+}));
+
+const mockedGetContacts = vi.mocked(getContacts);
 
 beforeEach(() => {
   localStorage.clear();
+  mockedGetContacts.mockReset();
+  mockedGetContacts.mockResolvedValue([]);
 });
 
 afterEach(() => {
@@ -81,5 +91,22 @@ describe("Layout", () => {
     // Mutating this to expect non-null makes the test fail in the fi state,
     // proving the assertion is meaningful.
     expect(screen.queryByRole("link", { name: "Events" })).toBeNull();
+  });
+
+  it("opens the contact modal from the Info pill and closes on Escape", async () => {
+    renderLayout();
+
+    // No modal until the pill is clicked.
+    expect(screen.queryByRole("dialog")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Yhteystiedot" }));
+
+    // The contact modal appears with its localized title.
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog).toBeTruthy();
+    expect(screen.getByText("Ota yhteyttä")).toBeTruthy();
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 });
