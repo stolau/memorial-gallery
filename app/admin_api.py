@@ -60,6 +60,22 @@ def _event_fields(data: dict) -> dict:
     return fields
 
 
+def _collection_fields(data: dict) -> dict:
+    fields: dict = {}
+    for key in ("name", "info"):
+        if key in data:
+            fields[key] = _str_or_none(data.get(key))
+    return fields
+
+
+def _contact_fields(data: dict) -> dict:
+    fields: dict = {}
+    for key in ("contact_name", "contact_email", "contact_phone"):
+        if key in data:
+            fields[key] = _str_or_none(data.get(key))
+    return fields
+
+
 # --- People ---------------------------------------------------------------
 
 
@@ -317,3 +333,146 @@ def reorder_folders(slug: str):
     if ids is None or not models.reorder_folders(p["id"], ids):
         return jsonify(error=gettext("Invalid photo order.")), 400
     return jsonify(ok=True), 200
+
+
+# --- Collections ----------------------------------------------------------
+
+
+@bp.route("/collections", methods=("POST",))
+@api_login_required
+def create_collection():
+    data = request.get_json(silent=True) or {}
+    name = _str_or_none(data.get("name"))
+    if not name:
+        return jsonify(error=gettext("Name is required.")), 400
+    base = _slugify(data.get("slug") or name)
+    if not base:
+        return jsonify(error=gettext("Enter a valid slug (letters and numbers only).")), 400
+    slug = _unique_slug(base, models.get_collection)
+    fields = _collection_fields(data)
+    fields.pop("name", None)
+    models.create_collection(slug, name, **fields)
+    return jsonify(attach_profile_url(models.get_collection(slug))), 201
+
+
+@bp.route("/collections/<slug>", methods=("PUT",))
+@api_login_required
+def update_collection(slug: str):
+    if not models.get_collection(slug):
+        return jsonify(error=gettext("Not found.")), 404
+    data = request.get_json(silent=True) or {}
+    models.update_collection(slug, **_collection_fields(data))
+    return jsonify(attach_profile_url(models.get_collection(slug))), 200
+
+
+@bp.route("/collections/<slug>", methods=("DELETE",))
+@api_login_required
+def delete_collection(slug: str):
+    c = models.get_collection(slug)
+    if not c:
+        return jsonify(error=gettext("Not found.")), 404
+    models.delete_collection(c["id"])
+    get_storage().delete_all("collections", slug)
+    return jsonify(deleted=True), 200
+
+
+@bp.route("/collections/<slug>/photos", methods=("POST",))
+@api_login_required
+def upload_collection_photos(slug: str):
+    c = models.get_collection(slug)
+    if not c:
+        return jsonify(error=gettext("Not found.")), 404
+    storage = get_storage()
+    caption = request.form.get("caption") or None
+    saved, skipped = _save_uploaded_photos(
+        request.files.getlist("photos"),
+        lambda name, fobj: storage.save_photo("collections", slug, name, fobj),
+        caption,
+        lambda name: models.add_collection_photo(c["id"], name, caption),
+        max_px=current_app.config["IMAGE_MAX_PX"],
+    )
+    return jsonify(saved=saved, skipped=skipped), 200
+
+
+@bp.route("/collections/<slug>/photos/<int:photo_id>", methods=("DELETE",))
+@api_login_required
+def delete_collection_photo(slug: str, photo_id: int):
+    filename = models.delete_collection_photo(photo_id, slug)
+    if filename is None:
+        return jsonify(error=gettext("Not found.")), 404
+    get_storage().delete_file("collections", slug, filename)
+    return jsonify(deleted=True), 200
+
+
+@bp.route("/collections/<slug>/photos/<int:photo_id>", methods=("PATCH",))
+@api_login_required
+def update_collection_photo(slug: str, photo_id: int):
+    data = request.get_json(silent=True) or {}
+    if "caption" in data:
+        caption = _str_or_none(data.get("caption"))
+        if not models.update_collection_photo_caption(photo_id, slug, caption):
+            return jsonify(error=gettext("Not found.")), 404
+    if "folder_id" in data:
+        folder_id = data.get("folder_id")
+        if folder_id is not None and not isinstance(folder_id, int):
+            return jsonify(error=gettext("Not found.")), 404
+        if not models.set_collection_photo_folder(photo_id, slug, folder_id):
+            return jsonify(error=gettext("Not found.")), 404
+    return jsonify(ok=True), 200
+
+
+@bp.route("/collections/<slug>/photos/order", methods=("PUT",))
+@api_login_required
+def reorder_collection_photos(slug: str):
+    c = models.get_collection(slug)
+    if not c:
+        return jsonify(error=gettext("Not found.")), 404
+    ids = _photo_order_ids(request.get_json(silent=True) or {})
+    if ids is None or not models.reorder_collection_photos(c["id"], ids):
+        return jsonify(error=gettext("Invalid photo order.")), 400
+    return jsonify(ok=True), 200
+
+
+@bp.route("/collections/<slug>/folders", methods=("POST",))
+@api_login_required
+def create_collection_folder(slug: str):
+    c = models.get_collection(slug)
+    if not c:
+        return jsonify(error=gettext("Not found.")), 404
+    data = request.get_json(silent=True) or {}
+    name = _str_or_none(data.get("name"))
+    if not name:
+        return jsonify(error=gettext("Name is required.")), 400
+    folder_id = models.create_collection_folder(c["id"], name)
+    return jsonify(id=folder_id, name=name), 201
+
+
+@bp.route("/collections/<slug>/folders/<int:folder_id>", methods=("DELETE",))
+@api_login_required
+def delete_collection_folder(slug: str, folder_id: int):
+    if not models.delete_collection_folder(folder_id, slug):
+        return jsonify(error=gettext("Not found.")), 404
+    return jsonify(deleted=True), 200
+
+
+@bp.route("/collections/<slug>/folders/order", methods=("PUT",))
+@api_login_required
+def reorder_collection_folders(slug: str):
+    c = models.get_collection(slug)
+    if not c:
+        return jsonify(error=gettext("Not found.")), 404
+    ids = _photo_order_ids(request.get_json(silent=True) or {})
+    if ids is None or not models.reorder_collection_folders(c["id"], ids):
+        return jsonify(error=gettext("Invalid photo order.")), 400
+    return jsonify(ok=True), 200
+
+
+# --- Contact / site settings ----------------------------------------------
+
+
+@bp.route("/contact", methods=("PUT",))
+@api_login_required
+def update_contact():
+    data = request.get_json(silent=True) or {}
+    models.update_settings(**_contact_fields(data))
+    return jsonify(models.get_settings()), 200

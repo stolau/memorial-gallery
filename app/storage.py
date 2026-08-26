@@ -8,10 +8,12 @@ Selected at startup via STORAGE_BACKEND:
 Both backends expose the same methods so views/admin/templates stay
 storage-agnostic.
 
-Key scheme (same in both backends, just rooted differently):
-    <slug>/<filename>            -- a person's gallery photo
-    <slug>/profile/<filename>    -- a person's profile picture
-    events/<slug>/<filename>     -- an event's gallery photo
+Key scheme (same in both backends, just rooted differently). Every entity's
+files live under an optional prefix, then the slug:
+    <slug>/<filename>                 -- a person's gallery photo (prefix "")
+    <slug>/profile/<filename>         -- a person's profile picture (prefix "")
+    events/<slug>/<filename>          -- an event's gallery photo (prefix "events")
+    collections/<slug>/<filename>     -- a collection's gallery photo (prefix "collections")
 """
 
 from __future__ import annotations
@@ -22,6 +24,18 @@ from pathlib import Path
 from typing import Any
 
 from flask import current_app, url_for
+
+# Prefix -> media-serving endpoint for local URL building. Person files sit at
+# the root (prefix ""), events/collections under a static path segment.
+_MEDIA_ENDPOINTS = {
+    "": "media.person",
+    "events": "media.event",
+    "collections": "media.collection",
+}
+
+
+def _key(prefix: str, slug: str, filename: str) -> str:
+    return f"{prefix}/{slug}/{filename}" if prefix else f"{slug}/{filename}"
 
 
 def get_storage():
@@ -34,33 +48,50 @@ class LocalStorage:
     def __init__(self, root: Path | str) -> None:
         self.root = Path(root)
 
-    def save_person_photo(self, slug: str, filename: str, file_obj: Any) -> None:
-        dest = self.root / slug / filename
+    def _dir(self, prefix: str, slug: str) -> Path:
+        return self.root / prefix / slug if prefix else self.root / slug
+
+    # --- prefix-parameterized helpers (all entities go through these) ------
+
+    def save_photo(self, prefix: str, slug: str, filename: str, file_obj: Any) -> None:
+        dest = self._dir(prefix, slug) / filename
         dest.parent.mkdir(parents=True, exist_ok=True)
         file_obj.save(dest)
+
+    def delete_file(self, prefix: str, slug: str, filename: str) -> None:
+        (self._dir(prefix, slug) / filename).unlink(missing_ok=True)
+
+    def delete_all(self, prefix: str, slug: str) -> None:
+        shutil.rmtree(self._dir(prefix, slug), ignore_errors=True)
+
+    def photo_url(self, prefix: str, slug: str, filename: str) -> str:
+        return url_for(_MEDIA_ENDPOINTS[prefix], slug=slug, filename=filename)
+
+    # --- thin per-entity wrappers (person prefix "", event "events") -------
+
+    def save_person_photo(self, slug: str, filename: str, file_obj: Any) -> None:
+        self.save_photo("", slug, filename, file_obj)
 
     def save_event_photo(self, slug: str, filename: str, file_obj: Any) -> None:
-        dest = self.root / "events" / slug / filename
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        file_obj.save(dest)
+        self.save_photo("events", slug, filename, file_obj)
 
     def delete_person_file(self, slug: str, filename: str) -> None:
-        (self.root / slug / filename).unlink(missing_ok=True)
+        self.delete_file("", slug, filename)
 
     def delete_event_file(self, slug: str, filename: str) -> None:
-        (self.root / "events" / slug / filename).unlink(missing_ok=True)
+        self.delete_file("events", slug, filename)
 
     def delete_person_all(self, slug: str) -> None:
-        shutil.rmtree(self.root / slug, ignore_errors=True)
+        self.delete_all("", slug)
 
     def delete_event_all(self, slug: str) -> None:
-        shutil.rmtree(self.root / "events" / slug, ignore_errors=True)
+        self.delete_all("events", slug)
 
     def person_photo_url(self, slug: str, filename: str) -> str:
-        return url_for("media.person", slug=slug, filename=filename)
+        return self.photo_url("", slug, filename)
 
     def event_photo_url(self, slug: str, filename: str) -> str:
-        return url_for("media.event", slug=slug, filename=filename)
+        return self.photo_url("events", slug, filename)
 
 
 class S3Storage:
@@ -126,26 +157,42 @@ class S3Storage:
                     Bucket=self.bucket, Delete={"Objects": objs}
                 )
 
+    # --- prefix-parameterized helpers (all entities go through these) ------
+
+    def save_photo(self, prefix: str, slug: str, filename: str, file_obj: Any) -> None:
+        self._put(_key(prefix, slug, filename), file_obj)
+
+    def delete_file(self, prefix: str, slug: str, filename: str) -> None:
+        self.client.delete_object(Bucket=self.bucket, Key=_key(prefix, slug, filename))
+
+    def delete_all(self, prefix: str, slug: str) -> None:
+        self._delete_prefix(f"{prefix}/{slug}/" if prefix else f"{slug}/")
+
+    def photo_url(self, prefix: str, slug: str, filename: str) -> str:
+        return f"{self.public_base}/{_key(prefix, slug, filename)}"
+
+    # --- thin per-entity wrappers (person prefix "", event "events") -------
+
     def save_person_photo(self, slug: str, filename: str, file_obj: Any) -> None:
-        self._put(f"{slug}/{filename}", file_obj)
+        self.save_photo("", slug, filename, file_obj)
 
     def save_event_photo(self, slug: str, filename: str, file_obj: Any) -> None:
-        self._put(f"events/{slug}/{filename}", file_obj)
+        self.save_photo("events", slug, filename, file_obj)
 
     def delete_person_file(self, slug: str, filename: str) -> None:
-        self.client.delete_object(Bucket=self.bucket, Key=f"{slug}/{filename}")
+        self.delete_file("", slug, filename)
 
     def delete_event_file(self, slug: str, filename: str) -> None:
-        self.client.delete_object(Bucket=self.bucket, Key=f"events/{slug}/{filename}")
+        self.delete_file("events", slug, filename)
 
     def delete_person_all(self, slug: str) -> None:
-        self._delete_prefix(f"{slug}/")
+        self.delete_all("", slug)
 
     def delete_event_all(self, slug: str) -> None:
-        self._delete_prefix(f"events/{slug}/")
+        self.delete_all("events", slug)
 
     def person_photo_url(self, slug: str, filename: str) -> str:
-        return f"{self.public_base}/{slug}/{filename}"
+        return self.photo_url("", slug, filename)
 
     def event_photo_url(self, slug: str, filename: str) -> str:
-        return f"{self.public_base}/events/{slug}/{filename}"
+        return self.photo_url("events", slug, filename)

@@ -97,6 +97,8 @@ def init_db() -> None:
     db.executescript(schema)
     _migrate_people_columns(db)
     _migrate_photo_columns(db)
+    # Pin a single blank settings row so get_settings always returns one.
+    db.execute("INSERT OR IGNORE INTO site_settings (id) VALUES (1)")
     db.commit()
 
 

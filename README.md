@@ -93,11 +93,15 @@ All routes below are served from the same app.
 | GET      | `/`                             | SPA index (landing page).                         |
 | GET      | `/media/<slug>/<file>`          | Serve an uploaded person image.                   |
 | GET      | `/media/events/<slug>/<file>`   | Serve an uploaded event image.                    |
+| GET      | `/media/collections/<slug>/<file>` | Serve an uploaded collection image.            |
 | GET      | `/api/people`                   | List of people (JSON).               |
 | GET      | `/api/people/<slug>`            | A person plus their photos (JSON).   |
 | GET      | `/api/events`                   | List of events (JSON).               |
 | GET      | `/api/events/<slug>`            | An event plus its photos (JSON).     |
-| —        | *(other JSON write/auth routes)* | See `/api/*` in `admin_api.py` (login, create/edit/delete, uploads). |
+| GET      | `/api/collections`              | List of collections (JSON).          |
+| GET      | `/api/collections/<slug>`       | A collection plus its photos + folders (JSON). |
+| GET      | `/api/contact`                  | Site contact info (name/email/phone, JSON). |
+| —        | *(other JSON write/auth routes)* | See `/api/*` in `admin_api.py` (login, create/edit/delete, uploads, `PUT /api/contact`). |
 | GET      | `/<path:path>`                  | SPA catch-all: any other path serves the SPA index (e.g. `/<slug>`, `/login`, admin views). |
 
 ## Project layout
@@ -119,6 +123,7 @@ babel.cfg            # Babel extraction config
 instance/            # SQLite database (gitignored, created at runtime)
 media/<slug>/        # person photos; portraits under media/<slug>/profile/ (gitignored)
 media/events/<slug>/ # event photos (gitignored)
+media/collections/<slug>/ # collection photos (gitignored)
 ```
 
 ## Translations

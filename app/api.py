@@ -32,5 +32,30 @@ def event(slug: str):
     e = models.get_event(slug)
     if not e:
         abort(404)
-    photos = attach_photo_urls(slug, models.list_event_photos(e["id"]), event=True)
+    photos = attach_photo_urls(slug, models.list_event_photos(e["id"]), prefix="events")
     return jsonify({"event": e, "photos": photos})
+
+
+@bp.route("/collections")
+def collections():
+    return jsonify([
+        attach_cover_url(c, prefix="collections") for c in models.list_collections()
+    ])
+
+
+@bp.route("/collections/<slug>")
+def collection(slug: str):
+    c = models.get_collection(slug)
+    if not c:
+        abort(404)
+    attach_profile_url(c)
+    photos = attach_photo_urls(
+        slug, models.list_collection_photos(c["id"]), prefix="collections"
+    )
+    folders = models.list_collection_folders(c["id"])
+    return jsonify({"collection": c, "photos": photos, "folders": folders})
+
+
+@bp.route("/contact")
+def contact():
+    return jsonify(models.get_settings())

@@ -1,0 +1,103 @@
+"""Proofs for the collections + site-settings model layer.
+
+Mirrors tests/test_models.py: every model fn needs an app context (they call
+get_db()), so each operation is wrapped in ``with app.app_context():``. Seeded
+data (tests/conftest.py::_seed): collection 'suku' with photo 'c-dddd.jpg'.
+"""
+
+from __future__ import annotations
+
+from app import models
+
+
+# --- update_collection ----------------------------------------------------
+
+def test_update_collection_ignores_non_editable_fields(app):
+    with app.app_context():
+        original_id = models.get_collection("suku")["id"]
+        models.update_collection("suku", name="Updated", id=999)
+
+        updated = models.get_collection("suku")
+        assert updated["name"] == "Updated"
+        assert updated["id"] == original_id
+        assert updated["id"] != 999
+        assert models.get_collection("suku")["slug"] == "suku"
+        assert models.get_collection("hacked") is None
+
+
+def test_update_collection_noop_when_all_filtered(app):
+    with app.app_context():
+        before = models.get_collection("suku")
+        models.update_collection("suku", id=12345)  # only non-editable -> noop
+        after = models.get_collection("suku")
+        assert after == before
+
+
+# --- delete ---------------------------------------------------------------
+
+def test_delete_collection(app):
+    with app.app_context():
+        cid = models.get_collection("suku")["id"]
+        models.delete_collection(cid)
+        assert models.get_collection("suku") is None
+
+
+# --- listing / counting shapes -------------------------------------------
+
+def test_list_collections_cover_filename(app):
+    with app.app_context():
+        collections = models.list_collections()
+    suku = next(c for c in collections if c["slug"] == "suku")
+    required = {"id", "slug", "name", "info", "profile_image", "cover_filename"}
+    assert required.issubset(suku.keys())
+    assert suku["cover_filename"] == "c-dddd.jpg"
+
+
+def test_collection_photo_count_and_list_shape(app):
+    with app.app_context():
+        cid = models.get_collection("suku")["id"]
+        assert models.count_collection_photos(cid) == 1
+        photos = models.list_collection_photos(cid)
+        required = {"id", "filename", "caption", "folder_id", "uploaded_at"}
+        assert required.issubset(photos[0].keys())
+        assert photos[0]["filename"] == "c-dddd.jpg"
+
+
+# --- site settings --------------------------------------------------------
+
+def test_get_settings_returns_seeded_blank_row(app):
+    with app.app_context():
+        s = models.get_settings()
+    assert set(s.keys()) == {"contact_name", "contact_email", "contact_phone"}
+    assert s == {"contact_name": None, "contact_email": None, "contact_phone": None}
+
+
+def test_update_settings_upserts_single_row(app):
+    with app.app_context():
+        models.update_settings(contact_name="Anssi", contact_email="a@example.com")
+        s = models.get_settings()
+        assert s["contact_name"] == "Anssi"
+        assert s["contact_email"] == "a@example.com"
+        assert s["contact_phone"] is None
+
+        # A second update mutates the SAME row (no duplicate id=1).
+        models.update_settings(contact_phone="+358 40 123 4567")
+        s2 = models.get_settings()
+        assert s2["contact_name"] == "Anssi"  # untouched
+        assert s2["contact_phone"] == "+358 40 123 4567"
+
+        rows = get_all_settings_rows(app)
+    assert rows == 1
+
+
+def test_update_settings_ignores_unknown_and_noop_on_empty(app):
+    with app.app_context():
+        before = models.get_settings()
+        models.update_settings(bogus="x")  # unknown key -> filtered -> noop
+        assert models.get_settings() == before
+
+
+def get_all_settings_rows(app) -> int:
+    from app.db import get_db
+
+    return get_db().execute("SELECT count(*) FROM site_settings").fetchone()[0]
