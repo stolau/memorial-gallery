@@ -66,12 +66,15 @@ function Lightbox({
         {photo.caption && (
           <p className="lightbox-caption">{photo.caption}</p>
         )}
-        <span className="lightbox-counter" aria-label={t("lightbox.counter")}>
-          {index + 1} / {n}
-        </span>
         <div className="lightbox-controls">
           <button type="button" aria-label={t("lightbox.prev")} onClick={prev}>
-            «
+            ←
+          </button>
+          <span className="lightbox-counter" aria-label={t("lightbox.counter")}>
+            {index + 1} / {n}
+          </span>
+          <button type="button" aria-label={t("lightbox.next")} onClick={next}>
+            →
           </button>
           <button
             type="button"
@@ -79,9 +82,6 @@ function Lightbox({
             onClick={() => setPlaying((p) => !p)}
           >
             {playing ? "⏸" : "▶"}
-          </button>
-          <button type="button" aria-label={t("lightbox.next")} onClick={next}>
-            »
           </button>
           <button
             type="button"

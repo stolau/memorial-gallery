@@ -6,6 +6,7 @@ import type {
   Collection,
   CollectionDetail,
   Contact,
+  FamilyLine,
 } from "./types";
 
 async function request<T>(path: string): Promise<T> {
@@ -40,6 +41,10 @@ export function getCollection(slug: string): Promise<CollectionDetail> {
   return request<CollectionDetail>(`/api/collections/${encodeURIComponent(slug)}`);
 }
 
-export function getContact(): Promise<Contact> {
-  return request<Contact>("/api/contact");
+export function getContacts(): Promise<Contact[]> {
+  return request<Contact[]>("/api/contacts");
+}
+
+export function getFamilyLines(): Promise<FamilyLine[]> {
+  return request<FamilyLine[]>("/api/family-lines");
 }

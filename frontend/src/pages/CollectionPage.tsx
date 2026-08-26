@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, useSearchParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { getCollection } from "../api/client";
 import type { CollectionDetail, Folder, Photo } from "../api/types";
 import Layout from "../components/Layout";
@@ -112,10 +112,17 @@ function CollectionPage() {
       {!error && detail === null && <p>{t("common.loading")}</p>}
       {detail && (
         <>
-          <h1>{detail.collection.name}</h1>
-          {detail.collection.info && (
-            <Paragraphs text={detail.collection.info} />
-          )}
+          <Link to="/collections" className="back-link">
+            ← {t("collections.title")}
+          </Link>
+          <div className="detail-head">
+            <h1 className="detail-name">{detail.collection.name}</h1>
+            {detail.collection.info && (
+              <div className="detail-desc">
+                <Paragraphs text={detail.collection.info} />
+              </div>
+            )}
+          </div>
           <FolderedPhotos photos={detail.photos} folders={detail.folders} />
         </>
       )}

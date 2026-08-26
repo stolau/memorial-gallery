@@ -52,11 +52,18 @@ def _person_fields(data: dict) -> dict:
     return fields
 
 
+VALID_EVENT_KINDS = frozenset(("wedding", "christening", "funeral", "gathering"))
+
+
 def _event_fields(data: dict) -> dict:
     fields: dict = {}
     for key in ("name", "description", "event_time", "place"):
         if key in data:
             fields[key] = _str_or_none(data.get(key))
+    if "kind" in data:
+        kind = _str_or_none(data.get("kind"))
+        # Soft validation: unknown kinds are dropped to NULL rather than rejected.
+        fields["kind"] = kind if kind in VALID_EVENT_KINDS else None
     return fields
 
 
@@ -70,7 +77,15 @@ def _collection_fields(data: dict) -> dict:
 
 def _contact_fields(data: dict) -> dict:
     fields: dict = {}
-    for key in ("contact_name", "contact_email", "contact_phone"):
+    for key in ("name", "role", "phone", "email"):
+        if key in data:
+            fields[key] = _str_or_none(data.get(key))
+    return fields
+
+
+def _family_line_fields(data: dict) -> dict:
+    fields: dict = {}
+    for key in ("name", "year_range", "note"):
         if key in data:
             fields[key] = _str_or_none(data.get(key))
     return fields
@@ -467,12 +482,136 @@ def reorder_collection_folders(slug: str):
     return jsonify(ok=True), 200
 
 
-# --- Contact / site settings ----------------------------------------------
+# --- Contacts -------------------------------------------------------------
 
 
-@bp.route("/contact", methods=("PUT",))
+@bp.route("/contacts", methods=("POST",))
 @api_login_required
-def update_contact():
+def create_contact():
     data = request.get_json(silent=True) or {}
-    models.update_settings(**_contact_fields(data))
-    return jsonify(models.get_settings()), 200
+    name = _str_or_none(data.get("name"))
+    if not name:
+        return jsonify(error=gettext("Name is required.")), 400
+    fields = _contact_fields(data)
+    fields.pop("name", None)
+    contact_id = models.create_contact(name, **fields)
+    return jsonify(models.get_contact(contact_id)), 201
+
+
+@bp.route("/contacts/<int:contact_id>", methods=("PUT",))
+@api_login_required
+def update_contact(contact_id: int):
+    if not models.get_contact(contact_id):
+        return jsonify(error=gettext("Not found.")), 404
+    data = request.get_json(silent=True) or {}
+    if "name" in data and not _str_or_none(data.get("name")):
+        return jsonify(error=gettext("Name is required.")), 400
+    models.update_contact(contact_id, **_contact_fields(data))
+    return jsonify(models.get_contact(contact_id)), 200
+
+
+@bp.route("/contacts/<int:contact_id>", methods=("DELETE",))
+@api_login_required
+def delete_contact(contact_id: int):
+    if not models.delete_contact(contact_id):
+        return jsonify(error=gettext("Not found.")), 404
+    return jsonify(deleted=True), 200
+
+
+@bp.route("/contacts/order", methods=("PUT",))
+@api_login_required
+def reorder_contacts():
+    ids = _photo_order_ids(request.get_json(silent=True) or {})
+    if ids is None or not models.reorder_contacts(ids):
+        return jsonify(error=gettext("Invalid order.")), 400
+    return jsonify(ok=True), 200
+
+
+# --- Family lines ---------------------------------------------------------
+
+
+def _person_id_from_request(data: dict) -> int | None:
+    """Resolve a member reference given as a person id or slug."""
+    pid = data.get("person_id")
+    if isinstance(pid, int) and not isinstance(pid, bool):
+        p = models.get_person_by_id(pid)
+        return p["id"] if p else None
+    slug = _str_or_none(data.get("person_slug") or data.get("slug"))
+    if slug:
+        p = models.get_person(slug)
+        return p["id"] if p else None
+    return None
+
+
+@bp.route("/family-lines", methods=("POST",))
+@api_login_required
+def create_family_line():
+    data = request.get_json(silent=True) or {}
+    name = _str_or_none(data.get("name"))
+    if not name:
+        return jsonify(error=gettext("Name is required.")), 400
+    base = _slugify(data.get("slug") or name)
+    if not base:
+        return jsonify(error=gettext("Enter a valid slug (letters and numbers only).")), 400
+    slug = _unique_slug(base, models.get_family_line)
+    fields = _family_line_fields(data)
+    fields.pop("name", None)
+    models.create_family_line(slug, name, **fields)
+    return jsonify(models.get_family_line(slug)), 201
+
+
+@bp.route("/family-lines/<slug>", methods=("PUT",))
+@api_login_required
+def update_family_line(slug: str):
+    if not models.get_family_line(slug):
+        return jsonify(error=gettext("Not found.")), 404
+    data = request.get_json(silent=True) or {}
+    models.update_family_line(slug, **_family_line_fields(data))
+    return jsonify(models.get_family_line(slug)), 200
+
+
+@bp.route("/family-lines/<slug>", methods=("DELETE",))
+@api_login_required
+def delete_family_line(slug: str):
+    line = models.get_family_line(slug)
+    if not line:
+        return jsonify(error=gettext("Not found.")), 404
+    models.delete_family_line(line["id"])
+    return jsonify(deleted=True), 200
+
+
+@bp.route("/family-lines/<slug>/members", methods=("POST",))
+@api_login_required
+def add_family_line_member(slug: str):
+    line = models.get_family_line(slug)
+    if not line:
+        return jsonify(error=gettext("Not found.")), 404
+    data = request.get_json(silent=True) or {}
+    person_id = _person_id_from_request(data)
+    if person_id is None:
+        return jsonify(error=gettext("Not found.")), 404
+    models.add_family_line_member(line["id"], person_id)
+    return jsonify(models.get_family_line(slug)), 200
+
+
+@bp.route("/family-lines/<slug>/members/<int:person_id>", methods=("DELETE",))
+@api_login_required
+def remove_family_line_member(slug: str, person_id: int):
+    line = models.get_family_line(slug)
+    if not line:
+        return jsonify(error=gettext("Not found.")), 404
+    if not models.remove_family_line_member(line["id"], person_id):
+        return jsonify(error=gettext("Not found.")), 404
+    return jsonify(models.get_family_line(slug)), 200
+
+
+@bp.route("/family-lines/<slug>/members/order", methods=("PUT",))
+@api_login_required
+def reorder_family_line_members(slug: str):
+    line = models.get_family_line(slug)
+    if not line:
+        return jsonify(error=gettext("Not found.")), 404
+    ids = _photo_order_ids(request.get_json(silent=True) or {})
+    if ids is None or not models.reorder_family_line_members(line["id"], ids):
+        return jsonify(error=gettext("Invalid order.")), 400
+    return jsonify(models.get_family_line(slug)), 200

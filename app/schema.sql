@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS events (
     description  TEXT,
     event_time   TEXT,
     place        TEXT,
+    kind         TEXT,
     created_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -87,9 +88,32 @@ CREATE TABLE IF NOT EXISTS collection_photos (
 
 CREATE INDEX IF NOT EXISTS idx_collection_photos_collection ON collection_photos(collection_id, uploaded_at DESC);
 
-CREATE TABLE IF NOT EXISTS site_settings (
-    id             INTEGER PRIMARY KEY,
-    contact_name   TEXT,
-    contact_email  TEXT,
-    contact_phone  TEXT
+CREATE TABLE IF NOT EXISTS contacts (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    position     INTEGER NOT NULL DEFAULT 0,
+    name         TEXT NOT NULL,
+    role         TEXT,
+    phone        TEXT,
+    email        TEXT,
+    created_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS family_lines (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    slug         TEXT NOT NULL UNIQUE,
+    name         TEXT NOT NULL,
+    year_range   TEXT,
+    note         TEXT,
+    position     INTEGER NOT NULL DEFAULT 0,
+    created_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS family_line_members (
+    family_line_id  INTEGER NOT NULL REFERENCES family_lines(id) ON DELETE CASCADE,
+    person_id       INTEGER NOT NULL REFERENCES people(id) ON DELETE CASCADE,
+    position        INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (family_line_id, person_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_family_line_members_line
+    ON family_line_members(family_line_id, position);

@@ -15,29 +15,43 @@ import {
   getPeople,
   getEvents,
   getCollections,
-  getContact,
+  getContacts,
+  getFamilyLines,
 } from "../../api/client";
 import {
   deletePerson,
   deleteEvent,
   deleteCollection,
+  deleteFamilyLine,
+  createContact,
   updateContact,
+  deleteContact,
 } from "../../api/admin";
 import type { AuthError } from "../../api/auth";
-import type { Person, Event, Collection, Contact } from "../../api/types";
+import type {
+  Person,
+  Event,
+  Collection,
+  Contact,
+  FamilyLine,
+} from "../../api/types";
 
 // Mock only the network boundary + auth. Router + i18n stay real.
 vi.mock("../../api/client", () => ({
   getPeople: vi.fn(),
   getEvents: vi.fn(),
   getCollections: vi.fn(),
-  getContact: vi.fn(),
+  getContacts: vi.fn(),
+  getFamilyLines: vi.fn(),
 }));
 vi.mock("../../api/admin", () => ({
   deletePerson: vi.fn(),
   deleteEvent: vi.fn(),
   deleteCollection: vi.fn(),
+  deleteFamilyLine: vi.fn(),
+  createContact: vi.fn(),
   updateContact: vi.fn(),
+  deleteContact: vi.fn(),
 }));
 
 const { clearAuth } = vi.hoisted(() => ({ clearAuth: vi.fn() }));
@@ -53,11 +67,15 @@ vi.mock("../../auth/AuthContext", () => ({
 const mockedGetPeople = vi.mocked(getPeople);
 const mockedGetEvents = vi.mocked(getEvents);
 const mockedGetCollections = vi.mocked(getCollections);
-const mockedGetContact = vi.mocked(getContact);
+const mockedGetContacts = vi.mocked(getContacts);
+const mockedGetFamilyLines = vi.mocked(getFamilyLines);
 const mockedDeletePerson = vi.mocked(deletePerson);
 const mockedDeleteEvent = vi.mocked(deleteEvent);
 const mockedDeleteCollection = vi.mocked(deleteCollection);
+const mockedDeleteFamilyLine = vi.mocked(deleteFamilyLine);
+const mockedCreateContact = vi.mocked(createContact);
 const mockedUpdateContact = vi.mocked(updateContact);
+const mockedDeleteContact = vi.mocked(deleteContact);
 
 const people: Person[] = [
   {
@@ -86,6 +104,7 @@ const events: Event[] = [
     description: null,
     event_time: null,
     place: null,
+    kind: null,
     cover_filename: null,
     cover_url: null,
   },
@@ -103,17 +122,35 @@ const collections: Collection[] = [
   },
 ];
 
-const contact: Contact = {
-  contact_name: "Anssi",
-  contact_email: "anssi@example.com",
-  contact_phone: null,
-};
+const contacts: Contact[] = [
+  {
+    id: 1,
+    position: 1,
+    name: "Anssi",
+    role: "Ylläpitäjä",
+    phone: null,
+    email: "anssi@example.com",
+  },
+];
+
+const familyLines: FamilyLine[] = [
+  {
+    id: 3,
+    slug: "kaijankoski",
+    name: "Kaijankosken päälinja",
+    year_range: "1850–",
+    note: null,
+    position: 1,
+    members: [],
+  },
+];
 
 function seedLoads() {
   mockedGetPeople.mockResolvedValue(people);
   mockedGetEvents.mockResolvedValue(events);
   mockedGetCollections.mockResolvedValue(collections);
-  mockedGetContact.mockResolvedValue(contact);
+  mockedGetContacts.mockResolvedValue(contacts);
+  mockedGetFamilyLines.mockResolvedValue(familyLines);
 }
 
 function renderDashboard() {
@@ -242,55 +279,113 @@ describe("AdminDashboard - collections", () => {
   });
 });
 
-describe("AdminDashboard - contact", () => {
-  it("seeds the contact form and PUTs the edited fields on save", async () => {
+
+describe("AdminDashboard - family lines", () => {
+  it("renders a family line with an edit link to its route", async () => {
     seedLoads();
-    mockedUpdateContact.mockResolvedValue({
-      contact_name: "Anssi Uistola",
-      contact_email: "anssi@example.com",
-      contact_phone: "+358401234567",
+    renderDashboard();
+
+    const line = await screen.findByText("Kaijankosken päälinja");
+    const row = line.closest("li")!;
+    const editLink = within(row).getByRole("link", { name: "Muokkaa" });
+    expect(editLink.getAttribute("href")).toBe(
+      "/admin/family-lines/kaijankoski/edit",
+    );
+  });
+
+  it("deletes a family line and refetches the list", async () => {
+    seedLoads();
+    mockedDeleteFamilyLine.mockResolvedValue({ deleted: true });
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+
+    renderDashboard();
+
+    const line = await screen.findByText("Kaijankosken päälinja");
+    const row = line.closest("li")!;
+    fireEvent.click(within(row).getByRole("button", { name: "Poista" }));
+
+    await waitFor(() =>
+      expect(mockedDeleteFamilyLine).toHaveBeenCalledWith("kaijankoski"),
+    );
+    // Refetch: getFamilyLines called on mount + after delete.
+    expect(mockedGetFamilyLines).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("AdminDashboard - contacts", () => {
+  it("seeds each contact row from the initial getContacts payload", async () => {
+    seedLoads();
+    renderDashboard();
+
+    const nameInputs = (await screen.findAllByLabelText(
+      "Nimi",
+    )) as HTMLInputElement[];
+    expect(nameInputs[0].value).toBe("Anssi");
+    const emailInputs = screen.getAllByLabelText(
+      "Sähköposti",
+    ) as HTMLInputElement[];
+    expect(emailInputs[0].value).toBe("anssi@example.com");
+  });
+
+  it("adds a new contact and refetches the list", async () => {
+    seedLoads();
+    mockedCreateContact.mockResolvedValue({
+      id: 2,
+      position: 2,
+      name: "Aino",
+      role: null,
+      phone: null,
+      email: null,
     });
 
     renderDashboard();
 
-    // Form seeded from the initial getContact payload.
-    const nameInput = (await screen.findByLabelText(
-      "Nimi",
-    )) as HTMLInputElement;
-    // The contact form holds the only labelled inputs on the dashboard.
-    const emailInput = screen.getByLabelText(
-      "Sähköposti",
-    ) as HTMLInputElement;
-    expect(emailInput.value).toBe("anssi@example.com");
-
-    fireEvent.change(nameInput, { target: { value: "Anssi Uistola" } });
-    fireEvent.change(screen.getByLabelText("Puhelin"), {
-      target: { value: "+358401234567" },
+    await screen.findAllByLabelText("Nimi");
+    // The add form is the last row: its name input is the last "Nimi".
+    const nameInputs = screen.getAllByLabelText("Nimi") as HTMLInputElement[];
+    fireEvent.change(nameInputs[nameInputs.length - 1], {
+      target: { value: "Aino" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Tallenna" }));
+    fireEvent.click(screen.getByRole("button", { name: "Lisää uusi" }));
 
-    await waitFor(() => expect(mockedUpdateContact).toHaveBeenCalledTimes(1));
-    expect(mockedUpdateContact).toHaveBeenCalledWith({
-      contact_name: "Anssi Uistola",
-      contact_email: "anssi@example.com",
-      contact_phone: "+358401234567",
-    });
-    // Confirmation message appears after a successful save.
-    expect(await screen.findByText("Yhteystiedot tallennettu.")).toBeTruthy();
+    await waitFor(() =>
+      expect(mockedCreateContact).toHaveBeenCalledWith({
+        name: "Aino",
+        role: null,
+        phone: null,
+        email: null,
+      }),
+    );
+    expect(mockedGetContacts).toHaveBeenCalledTimes(2);
   });
 
-  it("routes a 401 from updateContact through clearAuth (falsifiability twin)", async () => {
+  it("routes a 401 from a contact mutation through clearAuth", async () => {
     seedLoads();
     const err = { status: 401 } as AuthError;
     mockedUpdateContact.mockRejectedValue(err);
 
     renderDashboard();
 
-    await screen.findByLabelText("Sähköposti");
-    fireEvent.click(screen.getByRole("button", { name: "Tallenna" }));
+    await screen.findAllByLabelText("Nimi");
+    // First "Tallenna" belongs to the seeded contact row.
+    fireEvent.click(screen.getAllByRole("button", { name: "Tallenna" })[0]);
 
     await waitFor(() => expect(clearAuth).toHaveBeenCalledTimes(1));
-    // No success confirmation on failure.
-    expect(screen.queryByText("Yhteystiedot tallennettu.")).toBeNull();
+  });
+
+  it("deletes a contact via its row", async () => {
+    seedLoads();
+    mockedDeleteContact.mockResolvedValue({ deleted: true });
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+
+    renderDashboard();
+
+    await screen.findAllByLabelText("Nimi");
+    // Scope to the contact row via its seeded email input.
+    const emailInput = screen.getAllByLabelText("Sähköposti")[0];
+    const row = emailInput.closest("form")!;
+    fireEvent.click(within(row).getByRole("button", { name: "Poista" }));
+
+    await waitFor(() => expect(mockedDeleteContact).toHaveBeenCalledWith(1));
   });
 });

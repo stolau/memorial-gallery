@@ -209,6 +209,37 @@ def test_event_writes_require_auth(app, client):
         assert models.get_event("party") is not None
 
 
+def test_event_kind_round_trips_on_create(app, authed_client):
+    r = authed_client.post(
+        "/api/events", json={"name": "Wedding Day", "kind": "wedding"}
+    )
+    assert r.status_code == 201
+    assert r.get_json()["kind"] == "wedding"
+    # Public detail JSON surfaces the persisted kind.
+    detail = authed_client.get("/api/events/wedding-day").get_json()
+    assert detail["event"]["kind"] == "wedding"
+    with app.app_context():
+        assert models.get_event("wedding-day")["kind"] == "wedding"
+
+
+def test_event_kind_updates_and_clears(app, authed_client):
+    authed_client.put("/api/events/party", json={"kind": "gathering"})
+    with app.app_context():
+        assert models.get_event("party")["kind"] == "gathering"
+    # Blank string clears it back to NULL.
+    r = authed_client.put("/api/events/party", json={"kind": ""})
+    assert r.status_code == 200
+    assert r.get_json()["kind"] is None
+
+
+def test_event_kind_unknown_value_is_dropped_to_null(app, authed_client):
+    r = authed_client.put("/api/events/party", json={"kind": "birthday"})
+    assert r.status_code == 200
+    assert r.get_json()["kind"] is None
+    with app.app_context():
+        assert models.get_event("party")["kind"] is None
+
+
 # ==========================================================================
 # PHOTO UPLOADS
 # ==========================================================================

@@ -61,6 +61,7 @@ const eventFixture: Event = {
   description: null,
   event_time: null,
   place: null,
+  kind: null,
   cover_filename: null,
   cover_url: null,
 };
@@ -73,6 +74,7 @@ const detail: EventDetail = {
     description: "Desc",
     event_time: "1950",
     place: "Helsinki",
+    kind: null,
   },
   photos: [
     {

@@ -5,7 +5,8 @@ import {
   getPerson,
   getCollections,
   getCollection,
-  getContact,
+  getContacts,
+  getFamilyLines,
 } from "./client";
 import type {
   EventDetail,
@@ -14,6 +15,7 @@ import type {
   Collection,
   CollectionDetail,
   Contact,
+  FamilyLine,
 } from "./types";
 
 afterEach(() => {
@@ -77,6 +79,7 @@ describe("api client", () => {
         description: null,
         event_time: null,
         place: null,
+        kind: null,
       },
       photos: [],
     };
@@ -181,22 +184,51 @@ describe("api client", () => {
     expect(fetchMock.mock.calls[0][0]).toBe("/api/collections/the%20suku");
   });
 
-  it("getContact() GETs /api/contact and resolves the typed payload", async () => {
-    const contact: Contact = {
-      contact_name: "Anssi",
-      contact_email: "a@example.com",
-      contact_phone: null,
-    };
+  it("getContacts() GETs /api/contacts and resolves the typed list", async () => {
+    const contacts: Contact[] = [
+      {
+        id: 1,
+        position: 1,
+        name: "Anssi",
+        role: null,
+        phone: null,
+        email: "a@example.com",
+      },
+    ];
 
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue({
       ok: true,
-      json: async () => contact,
+      json: async () => contacts,
     } as Response);
 
-    const result = await getContact();
+    const result = await getContacts();
 
-    expect(result).toEqual(contact);
-    expect(fetchMock.mock.calls[0][0]).toBe("/api/contact");
+    expect(result).toEqual(contacts);
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/contacts");
+  });
+
+  it("getFamilyLines() GETs /api/family-lines and resolves the typed list", async () => {
+    const lines: FamilyLine[] = [
+      {
+        id: 1,
+        slug: "kaijankoski",
+        name: "Kaijankosken suku",
+        year_range: "1850–",
+        note: null,
+        position: 1,
+        members: [{ slug: "kalevi", display_name: "Kalevi" }],
+      },
+    ];
+
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => lines,
+    } as Response);
+
+    const result = await getFamilyLines();
+
+    expect(result).toEqual(lines);
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/family-lines");
   });
 
   it("getCollection() rejects when the response is not ok", async () => {

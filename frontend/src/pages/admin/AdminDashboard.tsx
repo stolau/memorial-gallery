@@ -1,9 +1,26 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import type { AuthError } from "../../api/auth";
-import { getPeople, getEvents, getCollections, getContact } from "../../api/client";
-import { deletePerson, deleteEvent, deleteCollection } from "../../api/admin";
-import type { Person, Event, Collection, Contact } from "../../api/types";
+import {
+  getPeople,
+  getEvents,
+  getCollections,
+  getContacts,
+  getFamilyLines,
+} from "../../api/client";
+import {
+  deletePerson,
+  deleteEvent,
+  deleteCollection,
+  deleteFamilyLine,
+} from "../../api/admin";
+import type {
+  Person,
+  Event,
+  Collection,
+  Contact,
+  FamilyLine,
+} from "../../api/types";
 import { useAuth } from "../../auth/AuthContext";
 import AdminLayout from "../../components/AdminLayout";
 import ContactForm from "./ContactForm";
@@ -15,17 +32,25 @@ function AdminDashboard() {
   const [people, setPeople] = useState<Person[] | null>(null);
   const [events, setEvents] = useState<Event[] | null>(null);
   const [collections, setCollections] = useState<Collection[] | null>(null);
-  const [contact, setContact] = useState<Contact | null>(null);
+  const [contacts, setContacts] = useState<Contact[] | null>(null);
+  const [familyLines, setFamilyLines] = useState<FamilyLine[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([getPeople(), getEvents(), getCollections(), getContact()])
-      .then(([p, e, c, ct]) => {
+    Promise.all([
+      getPeople(),
+      getEvents(),
+      getCollections(),
+      getContacts(),
+      getFamilyLines(),
+    ])
+      .then(([p, e, c, ct, fl]) => {
         setPeople(p);
         setEvents(e);
         setCollections(c);
-        setContact(ct);
+        setContacts(ct);
+        setFamilyLines(fl);
       })
       .catch((err: Error) => setLoadError(err.message));
   }, []);
@@ -76,6 +101,24 @@ function AdminDashboard() {
     }
   };
 
+  const handleDeleteFamilyLine = async (slug: string) => {
+    if (!window.confirm(t("admin.action.delete"))) return;
+    setError(null);
+    try {
+      await deleteFamilyLine(slug);
+      setFamilyLines(await getFamilyLines());
+    } catch (err) {
+      handleMutationError(err);
+    }
+  };
+
+  const reloadContacts = () => {
+    setError(null);
+    getContacts()
+      .then(setContacts)
+      .catch(handleMutationError);
+  };
+
   return (
     <AdminLayout>
       {loadError && <p role="alert">{loadError}</p>}
@@ -83,8 +126,9 @@ function AdminDashboard() {
         (people === null ||
           events === null ||
           collections === null ||
-          contact === null) && <p>{t("common.loading")}</p>}
-      {people && events && collections && contact && (
+          contacts === null ||
+          familyLines === null) && <p>{t("common.loading")}</p>}
+      {people && events && collections && contacts && familyLines && (
         <>
           {error && <p role="alert">{error}</p>}
           <section className="admin-section">
@@ -160,8 +204,36 @@ function AdminDashboard() {
             </Link>
           </section>
           <section className="admin-section">
+            <h2>{t("admin.familyLines.title")}</h2>
+            <ul className="admin-list">
+              {familyLines.map((line) => (
+                <li key={line.slug}>
+                  <span>{line.name}</span>
+                  <span className="admin-row-actions">
+                    <Link to={`/admin/family-lines/${line.slug}/edit`}>
+                      {t("admin.action.edit")}
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteFamilyLine(line.slug)}
+                    >
+                      {t("admin.action.delete")}
+                    </button>
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <Link className="admin-new" to="/admin/family-lines/new">
+              {t("admin.action.new")}
+            </Link>
+          </section>
+          <section className="admin-section">
             <h2>{t("admin.contact.title")}</h2>
-            <ContactForm initial={contact} onError={handleMutationError} />
+            <ContactForm
+              contacts={contacts}
+              onChanged={reloadContacts}
+              onError={handleMutationError}
+            />
           </section>
         </>
       )}

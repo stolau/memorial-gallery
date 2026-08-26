@@ -36,6 +36,8 @@ export interface PersonDetail {
   folders: Folder[];
 }
 
+export type EventKind = "wedding" | "christening" | "funeral" | "gathering";
+
 export interface Event {
   id: number;
   slug: string;
@@ -43,6 +45,7 @@ export interface Event {
   description: string | null;
   event_time: string | null;
   place: string | null;
+  kind: EventKind | null;
   cover_filename: string | null;
   cover_url: string | null;
 }
@@ -72,6 +75,7 @@ export interface EventCreate {
   description?: string | null;
   event_time?: string | null;
   place?: string | null;
+  kind?: EventKind | null;
 }
 
 export type EventUpdate = Partial<Omit<EventCreate, "slug">>;
@@ -105,10 +109,46 @@ export interface CollectionCreate {
 export type CollectionUpdate = Partial<Omit<CollectionCreate, "slug">>;
 
 export interface Contact {
-  contact_name: string | null;
-  contact_email: string | null;
-  contact_phone: string | null;
+  id: number;
+  position: number;
+  name: string;
+  role: string | null;
+  phone: string | null;
+  email: string | null;
 }
+
+export interface ContactCreate {
+  name: string;
+  role?: string | null;
+  phone?: string | null;
+  email?: string | null;
+}
+
+export type ContactUpdate = Partial<ContactCreate>;
+
+export interface FamilyLineMember {
+  slug: string;
+  display_name: string;
+}
+
+export interface FamilyLine {
+  id: number;
+  slug: string;
+  name: string;
+  year_range: string | null;
+  note: string | null;
+  position: number;
+  members: FamilyLineMember[];
+}
+
+export interface FamilyLineCreate {
+  name: string;
+  slug?: string;
+  year_range?: string | null;
+  note?: string | null;
+}
+
+export type FamilyLineUpdate = Partial<Omit<FamilyLineCreate, "slug">>;
 
 export interface UploadResult {
   saved: number;

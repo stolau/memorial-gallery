@@ -18,7 +18,10 @@ function CollectionsIndex() {
 
   return (
     <Layout>
-      <h1>{t("collections.title")}</h1>
+      <div className="page-head">
+        <p className="page-eyebrow">{t("inMemoriam")}</p>
+        <h1 className="page-title">{t("collections.title")}</h1>
+      </div>
       {error && <p role="alert">{error}</p>}
       {!error && collections === null && <p>{t("common.loading")}</p>}
       {collections && collections.length === 0 && (

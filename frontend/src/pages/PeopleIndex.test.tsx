@@ -2,23 +2,21 @@
 import { afterEach, describe, expect, it, vi, beforeEach } from "vitest";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { fireEvent } from "@testing-library/react";
 import PeopleIndex from "./PeopleIndex";
-import { getPeople } from "../api/client";
-import type { Person } from "../api/types";
+import { getPeople, getEvents, getFamilyLines } from "../api/client";
+import type { Event, FamilyLine, Person } from "../api/types";
 
 vi.mock("../api/client", () => ({
   getPeople: vi.fn(),
-  // Layout (rendered by this page) fetches contact on mount.
-  getContact: vi.fn(() =>
-    Promise.resolve({
-      contact_name: null,
-      contact_email: null,
-      contact_phone: null,
-    }),
-  ),
+  // The home page also loads the events + family-lines section.
+  getEvents: vi.fn(() => Promise.resolve([])),
+  getFamilyLines: vi.fn(() => Promise.resolve([])),
 }));
 
 const mockedGetPeople = vi.mocked(getPeople);
+const mockedGetEvents = vi.mocked(getEvents);
+const mockedGetFamilyLines = vi.mocked(getFamilyLines);
 
 const people: Person[] = [
   {
@@ -41,6 +39,10 @@ const people: Person[] = [
 
 beforeEach(() => {
   mockedGetPeople.mockReset();
+  mockedGetEvents.mockReset();
+  mockedGetEvents.mockResolvedValue([]);
+  mockedGetFamilyLines.mockReset();
+  mockedGetFamilyLines.mockResolvedValue([]);
 });
 
 afterEach(() => {
@@ -126,5 +128,82 @@ describe("PeopleIndex", () => {
     expect(alert.textContent).toBe("Network down");
     expect(screen.queryByText("Ladataan…")).toBeNull();
     expect(screen.queryByText("Aino Koski")).toBeNull();
+  });
+});
+
+const timelineEvents: Event[] = [
+  {
+    id: 1,
+    slug: "wedding",
+    name: "Aino & Kalevi Wedding",
+    description: null,
+    event_time: "1948",
+    place: "Helsinki",
+    kind: "wedding",
+    cover_filename: null,
+    cover_url: null,
+  },
+];
+
+const kinLines: FamilyLine[] = [
+  {
+    id: 1,
+    slug: "koski",
+    name: "Koski",
+    year_range: "1890–1998",
+    note: "The northern branch.",
+    position: 0,
+    members: [{ slug: "kalevi", display_name: "Kalevi Koski" }],
+  },
+];
+
+describe("PeopleIndex — events / family-lines tabs", () => {
+  it("defaults to the Timeline tab and shows events with a kind eyebrow", async () => {
+    mockedGetPeople.mockResolvedValue([]);
+    mockedGetEvents.mockResolvedValue(timelineEvents);
+    mockedGetFamilyLines.mockResolvedValue(kinLines);
+
+    render(
+      <MemoryRouter>
+        <PeopleIndex />
+      </MemoryRouter>,
+    );
+
+    // Timeline is the default tab: the event card + its localized kind label.
+    expect(await screen.findByText("Aino & Kalevi Wedding")).toBeTruthy();
+    expect(screen.getByText("Häät")).toBeTruthy();
+    // The Kin cards are not shown until that tab is selected.
+    expect(screen.queryByText("Koski")).toBeNull();
+
+    const timelineTab = screen.getByRole("tab", { name: "Aikajana" });
+    expect(timelineTab.getAttribute("aria-selected")).toBe("true");
+  });
+
+  it("switches to the Kin tab and links member chips to /:slug", async () => {
+    mockedGetPeople.mockResolvedValue([]);
+    mockedGetEvents.mockResolvedValue(timelineEvents);
+    mockedGetFamilyLines.mockResolvedValue(kinLines);
+
+    render(
+      <MemoryRouter>
+        <PeopleIndex />
+      </MemoryRouter>,
+    );
+
+    await screen.findByText("Aino & Kalevi Wedding");
+
+    fireEvent.click(screen.getByRole("tab", { name: "Suvut" }));
+
+    // The family line card renders with its name, range and note...
+    expect(screen.getByText("Koski")).toBeTruthy();
+    expect(screen.getByText("1890–1998")).toBeTruthy();
+    expect(screen.getByText("The northern branch.")).toBeTruthy();
+
+    // ...and each member is a chip linking to that person's page.
+    const chip = screen.getByRole("link", { name: "Kalevi Koski" });
+    expect(chip.getAttribute("href")).toBe("/kalevi");
+
+    // The timeline event is no longer shown once Kin is active.
+    expect(screen.queryByText("Aino & Kalevi Wedding")).toBeNull();
   });
 });

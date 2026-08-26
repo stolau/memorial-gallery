@@ -56,6 +56,11 @@ def collection(slug: str):
     return jsonify({"collection": c, "photos": photos, "folders": folders})
 
 
-@bp.route("/contact")
-def contact():
-    return jsonify(models.get_settings())
+@bp.route("/contacts")
+def contacts():
+    return jsonify(models.list_contacts())
+
+
+@bp.route("/family-lines")
+def family_lines():
+    return jsonify(models.list_family_lines())

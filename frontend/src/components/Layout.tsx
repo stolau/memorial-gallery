@@ -1,26 +1,13 @@
-import { useEffect, useState } from "react";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { getContact } from "../api/client";
-import type { Contact } from "../api/types";
 import { useT, useLang } from "../i18n/LangContext";
+import ContactModal from "./ContactModal";
 import "./components.css";
 
 function Layout({ children }: { children: ReactNode }) {
   const t = useT();
   const { lang, setLang } = useLang();
-  const [contact, setContact] = useState<Contact | null>(null);
-
-  useEffect(() => {
-    // Best-effort: a failed contact fetch must not break the chrome.
-    getContact()
-      .then(setContact)
-      .catch(() => setContact(null));
-  }, []);
-
-  const hasContact =
-    contact !== null &&
-    (contact.contact_name || contact.contact_email || contact.contact_phone);
+  const [contactOpen, setContactOpen] = useState(false);
 
   return (
     <>
@@ -31,6 +18,28 @@ function Layout({ children }: { children: ReactNode }) {
         <nav className="site-nav">
           <Link to="/events">{t("nav.events")}</Link>
           <Link to="/collections">{t("nav.collections")}</Link>
+          <button
+            type="button"
+            className="info-pill"
+            onClick={() => setContactOpen(true)}
+          >
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <circle cx="12" cy="12" r="9" />
+              <line x1="12" y1="11" x2="12" y2="16" />
+              <circle cx="12" cy="7.75" r="0.6" fill="currentColor" stroke="none" />
+            </svg>
+            {t("contact")}
+          </button>
+          <span className="nav-divider" aria-hidden="true" />
           <span className="lang-switch">
             <button
               type="button"
@@ -63,31 +72,9 @@ function Layout({ children }: { children: ReactNode }) {
             </button>
           </span>
         </nav>
-        {hasContact && (
-          <div className="site-contact">
-            {contact!.contact_name && (
-              <span className="site-contact-name">{contact!.contact_name}</span>
-            )}
-            {contact!.contact_email && (
-              <a
-                className="site-contact-email"
-                href={`mailto:${contact!.contact_email}`}
-              >
-                {contact!.contact_email}
-              </a>
-            )}
-            {contact!.contact_phone && (
-              <a
-                className="site-contact-phone"
-                href={`tel:${contact!.contact_phone}`}
-              >
-                {contact!.contact_phone}
-              </a>
-            )}
-          </div>
-        )}
       </header>
       <main className="page-main">{children}</main>
+      {contactOpen && <ContactModal onClose={() => setContactOpen(false)} />}
     </>
   );
 }
