@@ -3,6 +3,9 @@ import type {
   PersonDetail,
   Event,
   EventDetail,
+  Collection,
+  CollectionDetail,
+  Contact,
 } from "./types";
 
 async function request<T>(path: string): Promise<T> {
@@ -27,4 +30,16 @@ export function getEvents(): Promise<Event[]> {
 
 export function getEvent(slug: string): Promise<EventDetail> {
   return request<EventDetail>(`/api/events/${encodeURIComponent(slug)}`);
+}
+
+export function getCollections(): Promise<Collection[]> {
+  return request<Collection[]>("/api/collections");
+}
+
+export function getCollection(slug: string): Promise<CollectionDetail> {
+  return request<CollectionDetail>(`/api/collections/${encodeURIComponent(slug)}`);
+}
+
+export function getContact(): Promise<Contact> {
+  return request<Contact>("/api/contact");
 }

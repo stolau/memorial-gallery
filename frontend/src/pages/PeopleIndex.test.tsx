@@ -6,7 +6,17 @@ import PeopleIndex from "./PeopleIndex";
 import { getPeople } from "../api/client";
 import type { Person } from "../api/types";
 
-vi.mock("../api/client", () => ({ getPeople: vi.fn() }));
+vi.mock("../api/client", () => ({
+  getPeople: vi.fn(),
+  // Layout (rendered by this page) fetches contact on mount.
+  getContact: vi.fn(() =>
+    Promise.resolve({
+      contact_name: null,
+      contact_email: null,
+      contact_phone: null,
+    }),
+  ),
+}));
 
 const mockedGetPeople = vi.mocked(getPeople);
 

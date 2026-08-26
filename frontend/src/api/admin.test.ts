@@ -14,6 +14,18 @@ import {
   deleteEventPhoto,
   updatePhotoCaption,
   updateEventPhotoCaption,
+  createCollection,
+  updateCollection,
+  deleteCollection,
+  uploadCollectionPhotos,
+  deleteCollectionPhoto,
+  updateCollectionPhotoCaption,
+  setCollectionPhotoFolder,
+  reorderCollectionPhotos,
+  createCollectionFolder,
+  deleteCollectionFolder,
+  reorderCollectionFolders,
+  updateContact,
 } from "./admin";
 import type { AuthError } from "./auth";
 
@@ -157,6 +169,133 @@ describe("admin api - JSON functions", () => {
   });
 });
 
+describe("admin api - collections + contact", () => {
+  it("createCollection() POSTs JSON to /api/collections", async () => {
+    const fetchMock = mockOk({ slug: "suku" });
+    await createCollection({ name: "Suku", info: "hi" });
+
+    const { path, options } = lastCall(fetchMock);
+    expect(path).toBe("/api/collections");
+    expect(options).toMatchObject({
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+    });
+    expect(options.body).toBe(JSON.stringify({ name: "Suku", info: "hi" }));
+  });
+
+  it("updateCollection() PUTs JSON to /api/collections/<slug> (slug encoded)", async () => {
+    const fetchMock = mockOk({ slug: "the suku" });
+    await updateCollection("the suku", { info: "d" });
+
+    const { path, options } = lastCall(fetchMock);
+    expect(path).toBe("/api/collections/the%20suku");
+    expect(options).toMatchObject({ method: "PUT", credentials: "include" });
+    expect(options.body).toBe(JSON.stringify({ info: "d" }));
+  });
+
+  it("deleteCollection() DELETEs /api/collections/<slug>", async () => {
+    const fetchMock = mockOk({ deleted: true });
+    await deleteCollection("suku");
+
+    const { path, options } = lastCall(fetchMock);
+    expect(path).toBe("/api/collections/suku");
+    expect(options).toMatchObject({ method: "DELETE", credentials: "include" });
+  });
+
+  it("deleteCollectionPhoto() DELETEs /api/collections/<slug>/photos/<id>", async () => {
+    const fetchMock = mockOk({ deleted: true });
+    await deleteCollectionPhoto("su ku", 7);
+
+    const { path, options } = lastCall(fetchMock);
+    expect(path).toBe("/api/collections/su%20ku/photos/7");
+    expect(options).toMatchObject({ method: "DELETE", credentials: "include" });
+  });
+
+  it("updateCollectionPhotoCaption() PATCHes {caption}", async () => {
+    const fetchMock = mockOk({ ok: true });
+    await updateCollectionPhotoCaption("suku", 7, "hi");
+
+    const { path, options } = lastCall(fetchMock);
+    expect(path).toBe("/api/collections/suku/photos/7");
+    expect(options).toMatchObject({ method: "PATCH", credentials: "include" });
+    expect(options.body).toBe(JSON.stringify({ caption: "hi" }));
+  });
+
+  it("setCollectionPhotoFolder() PATCHes {folder_id}", async () => {
+    const fetchMock = mockOk({ ok: true });
+    await setCollectionPhotoFolder("suku", 7, 3);
+
+    const { path, options } = lastCall(fetchMock);
+    expect(path).toBe("/api/collections/suku/photos/7");
+    expect(options.body).toBe(JSON.stringify({ folder_id: 3 }));
+  });
+
+  it("reorderCollectionPhotos() PUTs {order} to /photos/order", async () => {
+    const fetchMock = mockOk({ ok: true });
+    await reorderCollectionPhotos("suku", [3, 1, 2]);
+
+    const { path, options } = lastCall(fetchMock);
+    expect(path).toBe("/api/collections/suku/photos/order");
+    expect(options.body).toBe(JSON.stringify({ order: [3, 1, 2] }));
+  });
+
+  it("createCollectionFolder() POSTs {name} to /folders", async () => {
+    const fetchMock = mockOk({ id: 1, name: "Album" });
+    await createCollectionFolder("suku", "Album");
+
+    const { path, options } = lastCall(fetchMock);
+    expect(path).toBe("/api/collections/suku/folders");
+    expect(options.body).toBe(JSON.stringify({ name: "Album" }));
+  });
+
+  it("deleteCollectionFolder() DELETEs /folders/<id>", async () => {
+    const fetchMock = mockOk({ deleted: true });
+    await deleteCollectionFolder("suku", 4);
+
+    const { path, options } = lastCall(fetchMock);
+    expect(path).toBe("/api/collections/suku/folders/4");
+    expect(options).toMatchObject({ method: "DELETE", credentials: "include" });
+  });
+
+  it("reorderCollectionFolders() PUTs {order} to /folders/order", async () => {
+    const fetchMock = mockOk({ ok: true });
+    await reorderCollectionFolders("suku", [2, 1]);
+
+    const { path, options } = lastCall(fetchMock);
+    expect(path).toBe("/api/collections/suku/folders/order");
+    expect(options.body).toBe(JSON.stringify({ order: [2, 1] }));
+  });
+
+  it("updateContact() PUTs the three fields to /api/contact", async () => {
+    const fetchMock = mockOk({
+      contact_name: "A",
+      contact_email: null,
+      contact_phone: null,
+    });
+    await updateContact({
+      contact_name: "A",
+      contact_email: null,
+      contact_phone: null,
+    });
+
+    const { path, options } = lastCall(fetchMock);
+    expect(path).toBe("/api/contact");
+    expect(options).toMatchObject({
+      method: "PUT",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+    });
+    expect(options.body).toBe(
+      JSON.stringify({
+        contact_name: "A",
+        contact_email: null,
+        contact_phone: null,
+      }),
+    );
+  });
+});
+
 describe("admin api - multipart functions", () => {
   function fakeFile(name: string): File {
     return new File([new Uint8Array([1, 2, 3])], name, { type: "image/jpeg" });
@@ -188,6 +327,20 @@ describe("admin api - multipart functions", () => {
     expect(options.headers).toBeUndefined();
     const form = options.body as FormData;
     expect(form.getAll("photos").length).toBe(2);
+  });
+
+  it("uploadCollectionPhotos() POSTs FormData with NO Content-Type header", async () => {
+    const fetchMock = mockOk({ saved: 1, skipped: 0 });
+    await uploadCollectionPhotos("su ku", [fakeFile("a.jpg")], "cap");
+
+    const { path, options } = lastCall(fetchMock);
+    expect(path).toBe("/api/collections/su%20ku/photos");
+    expect(options).toMatchObject({ method: "POST", credentials: "include" });
+    expect(options.body).toBeInstanceOf(FormData);
+    expect(options.headers).toBeUndefined();
+    const form = options.body as FormData;
+    expect(form.getAll("photos").length).toBe(1);
+    expect(form.get("caption")).toBe("cap");
   });
 
   it("setPersonProfileImage() PUTs FormData(profile_image) with NO Content-Type", async () => {

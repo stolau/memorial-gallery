@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import type { AuthError } from "../../api/auth";
-import { getPeople, getEvents } from "../../api/client";
-import { deletePerson, deleteEvent } from "../../api/admin";
-import type { Person, Event } from "../../api/types";
+import { getPeople, getEvents, getCollections, getContact } from "../../api/client";
+import { deletePerson, deleteEvent, deleteCollection } from "../../api/admin";
+import type { Person, Event, Collection, Contact } from "../../api/types";
 import { useAuth } from "../../auth/AuthContext";
 import AdminLayout from "../../components/AdminLayout";
+import ContactForm from "./ContactForm";
 import { useT } from "../../i18n/LangContext";
 
 function AdminDashboard() {
@@ -13,14 +14,18 @@ function AdminDashboard() {
   const { clearAuth } = useAuth();
   const [people, setPeople] = useState<Person[] | null>(null);
   const [events, setEvents] = useState<Event[] | null>(null);
+  const [collections, setCollections] = useState<Collection[] | null>(null);
+  const [contact, setContact] = useState<Contact | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([getPeople(), getEvents()])
-      .then(([p, e]) => {
+    Promise.all([getPeople(), getEvents(), getCollections(), getContact()])
+      .then(([p, e, c, ct]) => {
         setPeople(p);
         setEvents(e);
+        setCollections(c);
+        setContact(ct);
       })
       .catch((err: Error) => setLoadError(err.message));
   }, []);
@@ -60,13 +65,26 @@ function AdminDashboard() {
     }
   };
 
+  const handleDeleteCollection = async (slug: string) => {
+    if (!window.confirm(t("admin.action.delete"))) return;
+    setError(null);
+    try {
+      await deleteCollection(slug);
+      setCollections(await getCollections());
+    } catch (err) {
+      handleMutationError(err);
+    }
+  };
+
   return (
     <AdminLayout>
       {loadError && <p role="alert">{loadError}</p>}
-      {!loadError && (people === null || events === null) && (
-        <p>{t("common.loading")}</p>
-      )}
-      {people && events && (
+      {!loadError &&
+        (people === null ||
+          events === null ||
+          collections === null ||
+          contact === null) && <p>{t("common.loading")}</p>}
+      {people && events && collections && contact && (
         <>
           {error && <p role="alert">{error}</p>}
           <section className="admin-section">
@@ -116,6 +134,34 @@ function AdminDashboard() {
             <Link className="admin-new" to="/admin/events/new">
               {t("admin.action.new")}
             </Link>
+          </section>
+          <section className="admin-section">
+            <h2>{t("admin.collections.title")}</h2>
+            <ul className="admin-list">
+              {collections.map((collection) => (
+                <li key={collection.slug}>
+                  <span>{collection.name}</span>
+                  <span className="admin-row-actions">
+                    <Link to={`/admin/collections/${collection.slug}/edit`}>
+                      {t("admin.action.edit")}
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteCollection(collection.slug)}
+                    >
+                      {t("admin.action.delete")}
+                    </button>
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <Link className="admin-new" to="/admin/collections/new">
+              {t("admin.action.new")}
+            </Link>
+          </section>
+          <section className="admin-section">
+            <h2>{t("admin.contact.title")}</h2>
+            <ContactForm initial={contact} onError={handleMutationError} />
           </section>
         </>
       )}

@@ -6,7 +6,17 @@ import EventPage from "./EventPage";
 import { getEvent } from "../api/client";
 import type { EventDetail } from "../api/types";
 
-vi.mock("../api/client", () => ({ getEvent: vi.fn() }));
+vi.mock("../api/client", () => ({
+  getEvent: vi.fn(),
+  // Layout (rendered by this page) fetches contact on mount.
+  getContact: vi.fn(() =>
+    Promise.resolve({
+      contact_name: null,
+      contact_email: null,
+      contact_phone: null,
+    }),
+  ),
+}));
 
 const mockedGetEvent = vi.mocked(getEvent);
 

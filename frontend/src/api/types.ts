@@ -76,6 +76,40 @@ export interface EventCreate {
 
 export type EventUpdate = Partial<Omit<EventCreate, "slug">>;
 
+export interface Collection {
+  id: number;
+  slug: string;
+  name: string;
+  info: string | null;
+  profile_image: string | null;
+  cover_filename: string | null;
+  cover_url: string | null;
+}
+
+export type CollectionDetailData = Omit<Collection, "cover_filename" | "cover_url"> & {
+  profile_image_url: string | null;
+};
+
+export interface CollectionDetail {
+  collection: CollectionDetailData;
+  photos: Photo[];
+  folders: Folder[];
+}
+
+export interface CollectionCreate {
+  name: string;
+  slug?: string;
+  info?: string | null;
+}
+
+export type CollectionUpdate = Partial<Omit<CollectionCreate, "slug">>;
+
+export interface Contact {
+  contact_name: string | null;
+  contact_email: string | null;
+  contact_phone: string | null;
+}
+
 export interface UploadResult {
   saved: number;
   skipped: number;

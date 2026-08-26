@@ -8,7 +8,17 @@ import { LangProvider, useT } from "./LangContext";
 import { strings } from "./strings";
 
 // Mock ONLY the network boundary — everything i18n stays real.
-vi.mock("../api/client", () => ({ getEvents: vi.fn() }));
+vi.mock("../api/client", () => ({
+  getEvents: vi.fn(),
+  // Layout (rendered by EventsIndex) fetches contact on mount.
+  getContact: vi.fn(() =>
+    Promise.resolve({
+      contact_name: null,
+      contact_email: null,
+      contact_phone: null,
+    }),
+  ),
+}));
 
 const mockedGetEvents = vi.mocked(getEvents);
 

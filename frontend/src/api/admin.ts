@@ -7,6 +7,10 @@ import type {
   PersonUpdate,
   EventCreate,
   EventUpdate,
+  CollectionDetailData,
+  CollectionCreate,
+  CollectionUpdate,
+  Contact,
   UploadResult,
   CaptionUpdated,
 } from "./types";
@@ -204,4 +208,116 @@ export function reorderEventPhotos(
     `/api/events/${encodeURIComponent(slug)}/photos/order`,
     { order: ids },
   );
+}
+
+// --- Collections ----------------------------------------------------------
+
+export function createCollection(
+  data: CollectionCreate,
+): Promise<CollectionDetailData> {
+  return sendJson("POST", "/api/collections", data);
+}
+
+export function updateCollection(
+  slug: string,
+  data: CollectionUpdate,
+): Promise<CollectionDetailData> {
+  return sendJson("PUT", `/api/collections/${encodeURIComponent(slug)}`, data);
+}
+
+export function deleteCollection(slug: string): Promise<Deleted> {
+  return sendDelete(`/api/collections/${encodeURIComponent(slug)}`);
+}
+
+export function uploadCollectionPhotos(
+  slug: string,
+  files: File[],
+  caption?: string,
+): Promise<UploadResult> {
+  const form = new FormData();
+  for (const file of files) {
+    form.append("photos", file);
+  }
+  if (caption !== undefined) {
+    form.append("caption", caption);
+  }
+  return sendForm(
+    "POST",
+    `/api/collections/${encodeURIComponent(slug)}/photos`,
+    form,
+  );
+}
+
+export function deleteCollectionPhoto(slug: string, id: number): Promise<Deleted> {
+  return sendDelete(`/api/collections/${encodeURIComponent(slug)}/photos/${id}`);
+}
+
+export function updateCollectionPhotoCaption(
+  slug: string,
+  id: number,
+  caption: string | null,
+): Promise<CaptionUpdated> {
+  return sendJson(
+    "PATCH",
+    `/api/collections/${encodeURIComponent(slug)}/photos/${id}`,
+    { caption },
+  );
+}
+
+export function setCollectionPhotoFolder(
+  slug: string,
+  id: number,
+  folderId: number | null,
+): Promise<CaptionUpdated> {
+  return sendJson(
+    "PATCH",
+    `/api/collections/${encodeURIComponent(slug)}/photos/${id}`,
+    { folder_id: folderId },
+  );
+}
+
+export function reorderCollectionPhotos(
+  slug: string,
+  ids: number[],
+): Promise<CaptionUpdated> {
+  return sendJson(
+    "PUT",
+    `/api/collections/${encodeURIComponent(slug)}/photos/order`,
+    { order: ids },
+  );
+}
+
+export function createCollectionFolder(
+  slug: string,
+  name: string,
+): Promise<Folder> {
+  return sendJson(
+    "POST",
+    `/api/collections/${encodeURIComponent(slug)}/folders`,
+    { name },
+  );
+}
+
+export function deleteCollectionFolder(
+  slug: string,
+  id: number,
+): Promise<Deleted> {
+  return sendDelete(`/api/collections/${encodeURIComponent(slug)}/folders/${id}`);
+}
+
+export function reorderCollectionFolders(
+  slug: string,
+  ids: number[],
+): Promise<CaptionUpdated> {
+  return sendJson(
+    "PUT",
+    `/api/collections/${encodeURIComponent(slug)}/folders/order`,
+    { order: ids },
+  );
+}
+
+// --- Contact / site settings ----------------------------------------------
+
+export function updateContact(data: Contact): Promise<Contact> {
+  return sendJson("PUT", "/api/contact", data);
 }
